@@ -71,17 +71,37 @@
 
       <form class="todo-app__form" aria-label="Add a new step">
         <label class="todo-app__label" for="todo-input">New step</label>
-        <input
-          id="todo-input"
-          class="todo-app__input"
-          type="text"
-          name="todo"
-          placeholder="What's your next step?"
-          autocomplete="off"
-        />
-        <button class="todo-app__add-button" type="submit" aria-label="Add step">
-          <i data-lucide="plus"></i>
-        </button>
+        <div class="todo-app__input-wrapper">
+          <input
+            id="todo-input"
+            class="todo-app__input"
+            type="text"
+            name="todo"
+            placeholder="What's your next step?"
+            autocomplete="off"
+          />
+          <div class="todo-app__form-toolbar">
+            <div class="journey-picker">
+              <button
+                type="button"
+                class="journey-picker__trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-label="Select journey"
+              >
+                <span class="journey-picker__dot" aria-hidden="true"></span>
+                <span class="journey-picker__label">Journey</span>
+                <i data-lucide="chevron-down" class="journey-picker__chevron"></i>
+              </button>
+              <div class="journey-picker__dropdown" role="listbox" hidden>
+                <!-- Options populated by JS via populateJourneyPicker() -->
+              </div>
+            </div>
+            <button class="todo-app__add-button" type="submit" aria-label="Add step">
+              <i data-lucide="plus"></i>
+            </button>
+          </div>
+        </div>
       </form>
 
       <section class="todo-app__items" aria-live="polite" aria-label="Today's steps"></section>

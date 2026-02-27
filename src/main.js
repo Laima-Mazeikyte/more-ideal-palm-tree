@@ -1,5 +1,5 @@
 import './style.css'
-import { createIcons, Plus, X, User } from 'lucide'
+import { createIcons, Plus, X, User, ChevronDown, Check } from 'lucide'
 import { supabase } from './supabase.js'
 import {
   signInAnonymously,
@@ -19,6 +19,11 @@ const itemsContainer = document.querySelector('.todo-app__items')
 const eyebrow = document.querySelector('.todo-app__eyebrow')
 const progressEl = document.querySelector('.todo-app__progress')
 
+const journeyPickerTrigger = document.querySelector('.journey-picker__trigger')
+const journeyPickerDropdown = document.querySelector('.journey-picker__dropdown')
+const journeyPickerLabel = document.querySelector('.journey-picker__label')
+const journeyPickerDot = document.querySelector('.journey-picker__dot')
+
 const authDialog = document.querySelector('.auth-dialog')
 const authAuthView = document.querySelector('.auth-dialog__auth-view')
 const authUserView = document.querySelector('.auth-dialog__user-view')
@@ -29,7 +34,6 @@ const authErrorEl = document.querySelector('.auth-dialog__error')
 const authSubmitButton = document.querySelector('.auth-dialog__submit')
 const authSubmitLabel = document.querySelector('.auth-dialog__submit-label')
 const authTabs = document.querySelectorAll('.auth-dialog__tab')
-// Close buttons are inside <form method="dialog"> — native HTML closes the dialog.
 
 const accountButton = document.querySelector('.todo-app__account-button')
 const authDialogUserEmail = document.querySelector('.auth-dialog__user-email')
@@ -50,7 +54,9 @@ if (eyebrow) {
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
-let todos = []
+let steps = []
+let journeys = []
+let selectedJourneyId = null
 const renderedIds = new Set()
 let authMode = 'signup' // 'signup' | 'signin'
 
@@ -58,7 +64,7 @@ let authMode = 'signup' // 'signup' | 'signin'
 
 function hydrateIcons() {
   createIcons({
-    icons: { Plus, X, User },
+    icons: { Plus, X, User, ChevronDown, Check },
     attrs: { 'aria-hidden': 'true' },
   })
 }
@@ -67,8 +73,8 @@ function hydrateIcons() {
 
 function updateProgress() {
   if (!progressEl) return
-  const total = todos.length
-  const done = todos.filter((t) => t.completed).length
+  const total = steps.length
+  const done = steps.filter((s) => s.completed).length
   if (total === 0 || done === 0) {
     progressEl.textContent = ''
     return
@@ -80,12 +86,119 @@ function updateProgress() {
   progressEl.textContent = `${done} of ${total} step${total === 1 ? '' : 's'} done`
 }
 
+// ─── Journey Picker ──────────────────────────────────────────────────────────
+
+function populateJourneyPicker() {
+  if (!journeyPickerDropdown) return
+  journeyPickerDropdown.replaceChildren()
+
+  for (const journey of journeys) {
+    const option = document.createElement('button')
+    option.type = 'button'
+    option.className = 'journey-picker__option'
+    option.setAttribute('role', 'option')
+    option.dataset.journeyId = journey.id
+    option.dataset.journeySlug = journey.slug
+    option.setAttribute('aria-selected', String(journey.id === selectedJourneyId))
+
+    const dot = document.createElement('span')
+    dot.className = 'journey-picker__option-dot'
+    dot.setAttribute('aria-hidden', 'true')
+    dot.dataset.journeySlug = journey.slug
+
+    const label = document.createElement('span')
+    label.className = 'journey-picker__option-label'
+    label.textContent = journey.name
+
+    const checkIcon = document.createElement('i')
+    checkIcon.dataset.lucide = 'check'
+    checkIcon.className = 'journey-picker__option-check'
+
+    option.append(dot, label, checkIcon)
+    journeyPickerDropdown.append(option)
+  }
+
+  hydrateIcons()
+
+  // Select the first journey if nothing is selected yet
+  if (!selectedJourneyId && journeys.length > 0) {
+    selectJourney(journeys[0].id)
+  } else if (selectedJourneyId) {
+    updateTriggerDisplay()
+  }
+}
+
+function selectJourney(journeyId) {
+  selectedJourneyId = journeyId
+  updateTriggerDisplay()
+
+  if (!journeyPickerDropdown) return
+  journeyPickerDropdown.querySelectorAll('.journey-picker__option').forEach((opt) => {
+    opt.setAttribute('aria-selected', String(opt.dataset.journeyId === journeyId))
+  })
+}
+
+function updateTriggerDisplay() {
+  const journey = journeys.find((j) => j.id === selectedJourneyId)
+  if (!journey) return
+  if (journeyPickerLabel) journeyPickerLabel.textContent = journey.name
+  if (journeyPickerDot) journeyPickerDot.dataset.journeySlug = journey.slug
+  if (journeyPickerTrigger) journeyPickerTrigger.dataset.journeySlug = journey.slug
+}
+
+function openJourneyPicker() {
+  if (!journeyPickerDropdown || !journeyPickerTrigger) return
+  journeyPickerDropdown.hidden = false
+  journeyPickerTrigger.setAttribute('aria-expanded', 'true')
+  journeyPickerTrigger.classList.add('is-open')
+}
+
+function closeJourneyPicker() {
+  if (!journeyPickerDropdown || !journeyPickerTrigger) return
+  journeyPickerDropdown.hidden = true
+  journeyPickerTrigger.setAttribute('aria-expanded', 'false')
+  journeyPickerTrigger.classList.remove('is-open')
+}
+
+journeyPickerTrigger?.addEventListener('click', (event) => {
+  event.stopPropagation()
+  if (journeyPickerDropdown?.hidden) {
+    openJourneyPicker()
+  } else {
+    closeJourneyPicker()
+  }
+})
+
+journeyPickerDropdown?.addEventListener('click', (event) => {
+  const option = event.target.closest('.journey-picker__option')
+  if (!option) return
+  selectJourney(option.dataset.journeyId)
+  closeJourneyPicker()
+})
+
+// Close picker when clicking outside
+document.addEventListener('click', (event) => {
+  if (!journeyPickerDropdown || journeyPickerDropdown.hidden) return
+  const picker = journeyPickerTrigger?.closest('.journey-picker')
+  if (picker && !picker.contains(event.target)) {
+    closeJourneyPicker()
+  }
+})
+
+// Close picker on Escape
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && journeyPickerDropdown && !journeyPickerDropdown.hidden) {
+    closeJourneyPicker()
+    journeyPickerTrigger?.focus()
+  }
+})
+
 // ─── Render ─────────────────────────────────────────────────────────────────
 
-function renderTodos() {
+function renderSteps() {
   itemsContainer.replaceChildren()
 
-  if (todos.length === 0) {
+  if (steps.length === 0) {
     const empty = document.createElement('p')
     empty.className = 'todo-empty'
     empty.textContent = 'What will you do today? Add your first step above.'
@@ -94,41 +207,47 @@ function renderTodos() {
     return
   }
 
-  for (const todo of todos) {
+  for (const step of steps) {
+    const journey = step.journeys
+
     const item = document.createElement('article')
     item.className = 'todo-item'
-    if (todo.completed) {
-      item.classList.add('is-completed')
-    }
+    if (step.completed) item.classList.add('is-completed')
+    if (journey?.slug) item.dataset.journeySlug = journey.slug
 
-    const isNew = !renderedIds.has(todo.id)
+    const isNew = !renderedIds.has(step.id)
     if (isNew) {
       item.classList.add('is-new')
-      renderedIds.add(todo.id)
+      renderedIds.add(step.id)
     }
 
     const toggle = document.createElement('input')
     toggle.className = 'todo-item__toggle'
     toggle.type = 'checkbox'
-    toggle.checked = todo.completed
-    toggle.dataset.todoId = todo.id
-    toggle.setAttribute('aria-label', `Mark "${todo.text}" as complete`)
+    toggle.checked = step.completed
+    toggle.dataset.todoId = step.id
+    toggle.setAttribute('aria-label', `Mark "${step.text}" as complete`)
 
     const text = document.createElement('p')
     text.className = 'todo-item__text'
-    text.textContent = todo.text
+    text.textContent = step.text
+
+    const badge = document.createElement('span')
+    badge.className = 'todo-item__journey-badge'
+    badge.textContent = journey?.name ?? ''
+    if (journey?.slug) badge.dataset.journeySlug = journey.slug
 
     const deleteButton = document.createElement('button')
     deleteButton.className = 'todo-item__delete-button'
     deleteButton.type = 'button'
-    deleteButton.dataset.todoId = todo.id
-    deleteButton.setAttribute('aria-label', `Delete "${todo.text}"`)
+    deleteButton.dataset.todoId = step.id
+    deleteButton.setAttribute('aria-label', `Delete "${step.text}"`)
 
     const icon = document.createElement('i')
     icon.dataset.lucide = 'x'
     deleteButton.append(icon)
 
-    item.append(toggle, text, deleteButton)
+    item.append(toggle, text, badge, deleteButton)
     itemsContainer.append(item)
   }
 
@@ -138,68 +257,81 @@ function renderTodos() {
 
 // ─── Supabase CRUD ───────────────────────────────────────────────────────────
 
-async function loadTodos() {
+async function loadJourneys() {
   const { data, error } = await supabase
-    .from('todos')
-    .select('*')
+    .from('journeys')
+    .select('id, name, slug, sort_order')
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('Failed to load journeys:', error.message)
+    return
+  }
+
+  journeys = data
+  populateJourneyPicker()
+}
+
+async function loadSteps() {
+  const { data, error } = await supabase
+    .from('steps')
+    .select('*, journeys(id, name, slug)')
     .order('created_at', { ascending: true })
 
   if (error) {
-    console.error('Failed to load todos:', error.message)
+    console.error('Failed to load steps:', error.message)
     return
   }
 
-  todos = data
-  // Mark all initially-loaded todos as already rendered (no entry animation)
-  for (const todo of todos) {
-    renderedIds.add(todo.id)
+  steps = data
+  for (const step of steps) {
+    renderedIds.add(step.id)
   }
-  renderTodos()
+  renderSteps()
 }
 
-async function addTodo(text) {
+async function addStep(text, journeyId) {
   const { data, error } = await supabase
-    .from('todos')
-    .insert({ text, completed: false })
-    .select()
+    .from('steps')
+    .insert({ text, completed: false, journey_id: journeyId })
+    .select('*, journeys(id, name, slug)')
     .single()
 
   if (error) {
-    console.error('Failed to add todo:', error.message)
+    console.error('Failed to add step:', error.message)
     return
   }
 
-  todos.push(data)
-  renderTodos()
+  steps.push(data)
+  renderSteps()
 }
 
-async function toggleTodo(id, completed) {
+async function toggleStep(id, completed) {
   const { error } = await supabase
-    .from('todos')
+    .from('steps')
     .update({ completed })
     .eq('id', id)
 
   if (error) {
-    console.error('Failed to update todo:', error.message)
-    // Revert optimistic update
-    const todo = todos.find((t) => t.id === id)
-    if (todo) todo.completed = !completed
-    renderTodos()
+    console.error('Failed to update step:', error.message)
+    const step = steps.find((s) => s.id === id)
+    if (step) step.completed = !completed
+    renderSteps()
     return
   }
 
-  const todo = todos.find((t) => t.id === id)
-  if (todo) todo.completed = completed
-  renderTodos()
+  const step = steps.find((s) => s.id === id)
+  if (step) step.completed = completed
+  renderSteps()
 }
 
-async function deleteTodo(id, itemEl, deleteButton) {
+async function deleteStep(id, itemEl, deleteButton) {
   deleteButton.disabled = true
 
-  const { error } = await supabase.from('todos').delete().eq('id', id)
+  const { error } = await supabase.from('steps').delete().eq('id', id)
 
   if (error) {
-    console.error('Failed to delete todo:', error.message)
+    console.error('Failed to delete step:', error.message)
     deleteButton.disabled = false
     return
   }
@@ -209,12 +341,12 @@ async function deleteTodo(id, itemEl, deleteButton) {
   if (itemEl) {
     itemEl.classList.add('is-removing')
     setTimeout(() => {
-      todos = todos.filter((t) => t.id !== id)
-      renderTodos()
+      steps = steps.filter((s) => s.id !== id)
+      renderSteps()
     }, 210)
   } else {
-    todos = todos.filter((t) => t.id !== id)
-    renderTodos()
+    steps = steps.filter((s) => s.id !== id)
+    renderSteps()
   }
 }
 
@@ -275,10 +407,8 @@ function openAuthDialog() {
 
 function closeAuthDialog() {
   authDialog?.close()
-  // Cleanup runs in the dialog 'close' event below.
 }
 
-// Reset form state whenever the dialog is closed (by any means).
 authDialog?.addEventListener('close', () => {
   clearAuthError()
   authForm?.reset()
@@ -318,11 +448,8 @@ authForm?.addEventListener('submit', async (event) => {
       authSubmitButton.disabled = false
       return
     }
-    // updateUser promotes the anonymous user in-place — no migration needed.
-    // onAuthStateChange will fire and reload todos.
     closeAuthDialog()
   } else {
-    // Capture anonymous user ID before signing in so we can migrate their todos.
     const { data: sessionData } = await getSession()
     const anonUserId = sessionData.session?.user?.id ?? null
     const wasAnonymous = sessionData.session?.user?.is_anonymous ?? false
@@ -337,11 +464,10 @@ authForm?.addEventListener('submit', async (event) => {
     if (wasAnonymous && anonUserId) {
       const { error: rpcError } = await claimAnonymousTodos(anonUserId)
       if (rpcError) {
-        console.error('Failed to migrate anonymous todos:', rpcError.message)
+        console.error('Failed to migrate anonymous steps:', rpcError.message)
       }
     }
 
-    // onAuthStateChange will fire and reload todos.
     closeAuthDialog()
   }
 
@@ -351,20 +477,18 @@ authForm?.addEventListener('submit', async (event) => {
 authDialogSignOut?.addEventListener('click', async () => {
   closeAuthDialog()
   await signOut()
-  // Sign back in anonymously so the app stays usable immediately.
   await signInAnonymously()
-  // onAuthStateChange will fire and reload todos (empty list for new anon user).
 })
 
-// ─── Todo Events ─────────────────────────────────────────────────────────────
+// ─── Step Events ─────────────────────────────────────────────────────────────
 
 form.addEventListener('submit', (event) => {
   event.preventDefault()
   const text = input.value.trim()
-  if (!text) return
+  if (!text || !selectedJourneyId) return
   input.value = ''
   input.focus()
-  addTodo(text)
+  addStep(text, selectedJourneyId)
 })
 
 itemsContainer.addEventListener('change', (event) => {
@@ -372,12 +496,11 @@ itemsContainer.addEventListener('change', (event) => {
   if (!(target instanceof HTMLInputElement) || !target.matches('.todo-item__toggle')) return
 
   const id = target.dataset.todoId
-  // Optimistic update
-  const todo = todos.find((t) => t.id === id)
-  if (!todo) return
-  todo.completed = target.checked
-  renderTodos()
-  toggleTodo(id, target.checked)
+  const step = steps.find((s) => s.id === id)
+  if (!step) return
+  step.completed = target.checked
+  renderSteps()
+  toggleStep(id, target.checked)
 })
 
 itemsContainer.addEventListener('click', (event) => {
@@ -389,31 +512,31 @@ itemsContainer.addEventListener('click', (event) => {
 
   const id = deleteButton.dataset.todoId
   const itemEl = deleteButton.closest('.todo-item')
-  deleteTodo(id, itemEl, deleteButton)
+  deleteStep(id, itemEl, deleteButton)
 })
 
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 hydrateIcons()
 
-// React to auth state changes (sign-in, sign-up, sign-out).
 onAuthStateChange((_event, session) => {
   updateHeaderForUser(session?.user ?? null)
-  // Clear local state and reload from Supabase whenever the session changes.
-  todos = []
+  steps = []
   renderedIds.clear()
-  loadTodos()
+  loadSteps()
 })
 
-// Ensure there's always an active session — create an anonymous one if needed.
 async function init() {
+  // Load journeys first so the picker is populated before any interaction
+  await loadJourneys()
+
   const { data } = await getSession()
   if (!data.session) {
     await signInAnonymously()
-    // onAuthStateChange will fire and call loadTodos.
+    // onAuthStateChange will fire → loadSteps()
   } else {
     updateHeaderForUser(data.session.user)
-    loadTodos()
+    loadSteps()
   }
 }
 
