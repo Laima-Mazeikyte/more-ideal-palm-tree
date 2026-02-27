@@ -328,12 +328,12 @@ button:focus-visible {
 
 .todo-app__input-wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   background: color-mix(in oklab, var(--color-surface) 80%, var(--color-bg) 20%);
   border: var(--border-width-sm) solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: 0 1px 3px color-mix(in oklab, var(--neutral-900) 4%, transparent), 0 1px 2px color-mix(in oklab, var(--neutral-900) 3%, transparent);
-  overflow: hidden;
   transition: border-color var(--motion-fast) var(--motion-ease);
 }
 
@@ -344,9 +344,10 @@ button:focus-visible {
 .todo-app__form-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-xs) var(--space-sm);
-  border-top: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 55%, transparent);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-xs);
+  border-left: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 55%, transparent);
+  flex-shrink: 0;
 }
 
 .todo-app__label {
@@ -363,7 +364,8 @@ button:focus-visible {
 
 .todo-app__input {
   box-sizing: border-box;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 3rem;
   border: none;
   border-radius: 0;
@@ -668,6 +670,55 @@ button:focus-visible {
   opacity: 0.45;
 }
 
+/* Badge as interactive button — override global button:hover */
+button.todo-item__journey-badge {
+  box-shadow: none;
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+
+button.todo-item__journey-badge:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+button.todo-item__journey-badge[data-journey-slug="vitality"]:hover,
+button.todo-item__journey-badge[data-journey-slug="vitality"].is-open {
+  background: var(--journey-vitality-soft);
+  border-color: var(--journey-vitality-300);
+  color: var(--journey-vitality-strong);
+}
+
+button.todo-item__journey-badge[data-journey-slug="pursuits"]:hover,
+button.todo-item__journey-badge[data-journey-slug="pursuits"].is-open {
+  background: var(--journey-pursuits-soft);
+  border-color: var(--journey-pursuits-300);
+  color: var(--journey-pursuits-strong);
+}
+
+button.todo-item__journey-badge[data-journey-slug="prosperity"]:hover,
+button.todo-item__journey-badge[data-journey-slug="prosperity"].is-open {
+  background: var(--journey-prosperity-soft);
+  border-color: var(--journey-prosperity-300);
+  color: var(--journey-prosperity-strong);
+}
+
+button.todo-item__journey-badge[data-journey-slug="connections"]:hover,
+button.todo-item__journey-badge[data-journey-slug="connections"].is-open {
+  background: var(--journey-connections-soft);
+  border-color: var(--journey-connections-300);
+  color: var(--journey-connections-strong);
+}
+
+button.todo-item__journey-badge[data-journey-slug="foundations"]:hover,
+button.todo-item__journey-badge[data-journey-slug="foundations"].is-open {
+  background: var(--journey-foundations-soft);
+  border-color: var(--journey-foundations-300);
+  color: var(--journey-foundations-strong);
+}
+
 /* ─── Journey Picker ─────────────────────────────────────────────────────── */
 
 .journey-picker {
@@ -702,8 +753,8 @@ button:focus-visible {
 }
 
 .journey-picker__dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   background: var(--color-border);
   flex-shrink: 0;
@@ -730,7 +781,7 @@ button:focus-visible {
 
 .journey-picker__dropdown {
   position: absolute;
-  bottom: calc(100% + 0.375rem);
+  top: calc(100% + 0.375rem);
   left: 0;
   min-width: 11rem;
   background: var(--color-bg);
@@ -801,9 +852,33 @@ button:focus-visible {
   opacity: 1;
 }
 
+/* Item journey picker — right-aligned (base already opens downward) */
+.todo-item__journey-picker .journey-picker__dropdown {
+  left: auto;
+  right: 0;
+}
+
 @media (max-width: 36rem) {
   #app {
     padding: var(--space-lg);
+  }
+}
+
+@media (max-width: 30rem) {
+  .todo-app__input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-app__form-toolbar {
+    border-left: none;
+    border-top: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 55%, transparent);
+    padding: var(--space-xs) var(--space-sm);
+    justify-content: space-between;
+  }
+
+  .journey-picker__label {
+    display: none;
   }
 }
 

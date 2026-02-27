@@ -86,7 +86,7 @@ function updateProgress() {
   progressEl.textContent = `${done} of ${total} step${total === 1 ? '' : 's'} done`
 }
 
-// ─── Journey Picker ──────────────────────────────────────────────────────────
+// ─── Journey Picker (form) ───────────────────────────────────────────────────
 
 function populateJourneyPicker() {
   if (!journeyPickerDropdown) return
@@ -160,8 +160,23 @@ function closeJourneyPicker() {
   journeyPickerTrigger.classList.remove('is-open')
 }
 
+// ─── Item Journey Pickers ─────────────────────────────────────────────────────
+
+function closeAllItemJourneyPickers() {
+  itemsContainer.querySelectorAll('.journey-picker__dropdown:not([hidden])').forEach((dropdown) => {
+    dropdown.hidden = true
+    dropdown
+      .closest('.journey-picker')
+      ?.querySelector('.journey-picker__item-trigger')
+      ?.classList.remove('is-open')
+  })
+}
+
+// ─── Journey Picker Events ────────────────────────────────────────────────────
+
 journeyPickerTrigger?.addEventListener('click', (event) => {
   event.stopPropagation()
+  closeAllItemJourneyPickers()
   if (journeyPickerDropdown?.hidden) {
     openJourneyPicker()
   } else {
@@ -176,24 +191,86 @@ journeyPickerDropdown?.addEventListener('click', (event) => {
   closeJourneyPicker()
 })
 
-// Close picker when clicking outside
+// Close pickers when clicking outside
 document.addEventListener('click', (event) => {
-  if (!journeyPickerDropdown || journeyPickerDropdown.hidden) return
-  const picker = journeyPickerTrigger?.closest('.journey-picker')
-  if (picker && !picker.contains(event.target)) {
-    closeJourneyPicker()
+  // Close form journey picker
+  if (journeyPickerDropdown && !journeyPickerDropdown.hidden) {
+    const picker = journeyPickerTrigger?.closest('.journey-picker')
+    if (picker && !picker.contains(event.target)) {
+      closeJourneyPicker()
+    }
   }
+  // Close any item journey pickers not containing the click target
+  itemsContainer.querySelectorAll('.journey-picker__dropdown:not([hidden])').forEach((dropdown) => {
+    const picker = dropdown.closest('.journey-picker')
+    if (picker && !picker.contains(event.target)) {
+      dropdown.hidden = true
+      picker.querySelector('.journey-picker__item-trigger')?.classList.remove('is-open')
+    }
+  })
 })
 
-// Close picker on Escape
+// Close pickers on Escape
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && journeyPickerDropdown && !journeyPickerDropdown.hidden) {
+  if (event.key !== 'Escape') return
+  if (journeyPickerDropdown && !journeyPickerDropdown.hidden) {
     closeJourneyPicker()
     journeyPickerTrigger?.focus()
   }
+  closeAllItemJourneyPickers()
 })
 
 // ─── Render ─────────────────────────────────────────────────────────────────
+
+function buildItemJourneyPicker(step) {
+  const journey = step.journeys
+
+  const wrapper = document.createElement('div')
+  wrapper.className = 'journey-picker todo-item__journey-picker'
+
+  const badge = document.createElement('button')
+  badge.type = 'button'
+  badge.className = 'todo-item__journey-badge journey-picker__item-trigger'
+  badge.textContent = journey?.name ?? ''
+  badge.dataset.stepId = step.id
+  if (journey?.slug) badge.dataset.journeySlug = journey.slug
+  badge.setAttribute('aria-label', `Change journey for "${step.text}"`)
+  badge.setAttribute('aria-haspopup', 'listbox')
+
+  const dropdown = document.createElement('div')
+  dropdown.className = 'journey-picker__dropdown'
+  dropdown.setAttribute('role', 'listbox')
+  dropdown.hidden = true
+
+  for (const j of journeys) {
+    const option = document.createElement('button')
+    option.type = 'button'
+    option.className = 'journey-picker__option'
+    option.setAttribute('role', 'option')
+    option.setAttribute('aria-selected', String(j.id === step.journey_id))
+    option.dataset.journeyId = j.id
+    option.dataset.stepId = step.id
+
+    const dot = document.createElement('span')
+    dot.className = 'journey-picker__option-dot'
+    dot.setAttribute('aria-hidden', 'true')
+    dot.dataset.journeySlug = j.slug
+
+    const label = document.createElement('span')
+    label.className = 'journey-picker__option-label'
+    label.textContent = j.name
+
+    const checkIcon = document.createElement('i')
+    checkIcon.dataset.lucide = 'check'
+    checkIcon.className = 'journey-picker__option-check'
+
+    option.append(dot, label, checkIcon)
+    dropdown.append(option)
+  }
+
+  wrapper.append(badge, dropdown)
+  return wrapper
+}
 
 function renderSteps() {
   itemsContainer.replaceChildren()
@@ -232,10 +309,7 @@ function renderSteps() {
     text.className = 'todo-item__text'
     text.textContent = step.text
 
-    const badge = document.createElement('span')
-    badge.className = 'todo-item__journey-badge'
-    badge.textContent = journey?.name ?? ''
-    if (journey?.slug) badge.dataset.journeySlug = journey.slug
+    const itemPicker = buildItemJourneyPicker(step)
 
     const deleteButton = document.createElement('button')
     deleteButton.className = 'todo-item__delete-button'
@@ -247,7 +321,7 @@ function renderSteps() {
     icon.dataset.lucide = 'x'
     deleteButton.append(icon)
 
-    item.append(toggle, text, badge, deleteButton)
+    item.append(toggle, text, itemPicker, deleteButton)
     itemsContainer.append(item)
   }
 
@@ -348,6 +422,24 @@ async function deleteStep(id, itemEl, deleteButton) {
     steps = steps.filter((s) => s.id !== id)
     renderSteps()
   }
+}
+
+async function updateStepJourney(id, journeyId) {
+  const { data, error } = await supabase
+    .from('steps')
+    .update({ journey_id: journeyId })
+    .eq('id', id)
+    .select('*, journeys(id, name, slug)')
+    .single()
+
+  if (error) {
+    console.error('Failed to update step journey:', error.message)
+    return
+  }
+
+  const idx = steps.findIndex((s) => s.id === id)
+  if (idx !== -1) steps[idx] = data
+  renderSteps()
 }
 
 // ─── Auth UI ─────────────────────────────────────────────────────────────────
@@ -507,12 +599,61 @@ itemsContainer.addEventListener('click', (event) => {
   const target = event.target
   if (!(target instanceof Element)) return
 
+  // Delete button
   const deleteButton = target.closest('.todo-item__delete-button')
-  if (!deleteButton || !(deleteButton instanceof HTMLButtonElement)) return
+  if (deleteButton instanceof HTMLButtonElement) {
+    const id = deleteButton.dataset.todoId
+    const itemEl = deleteButton.closest('.todo-item')
+    deleteStep(id, itemEl, deleteButton)
+    return
+  }
 
-  const id = deleteButton.dataset.todoId
-  const itemEl = deleteButton.closest('.todo-item')
-  deleteStep(id, itemEl, deleteButton)
+  // Item journey picker trigger (the badge button)
+  const itemTrigger = target.closest('.journey-picker__item-trigger')
+  if (itemTrigger instanceof HTMLButtonElement) {
+    event.stopPropagation()
+    closeJourneyPicker()
+    const picker = itemTrigger.closest('.journey-picker')
+    const dropdown = picker?.querySelector('.journey-picker__dropdown')
+    if (!dropdown) return
+
+    // Close all other open item dropdowns
+    itemsContainer.querySelectorAll('.journey-picker__dropdown:not([hidden])').forEach((d) => {
+      if (d !== dropdown) {
+        d.hidden = true
+        d.closest('.journey-picker')?.querySelector('.journey-picker__item-trigger')?.classList.remove('is-open')
+      }
+    })
+
+    if (dropdown.hidden) {
+      dropdown.hidden = false
+      itemTrigger.classList.add('is-open')
+    } else {
+      dropdown.hidden = true
+      itemTrigger.classList.remove('is-open')
+    }
+    return
+  }
+
+  // Item journey option
+  const journeyOption = target.closest('.journey-picker__option[data-step-id]')
+  if (journeyOption instanceof HTMLButtonElement) {
+    const journeyId = journeyOption.dataset.journeyId
+    const stepId = journeyOption.dataset.stepId
+    if (!journeyId || !stepId) return
+
+    const dropdown = journeyOption.closest('.journey-picker__dropdown')
+    if (dropdown) {
+      dropdown.hidden = true
+      dropdown
+        .closest('.journey-picker')
+        ?.querySelector('.journey-picker__item-trigger')
+        ?.classList.remove('is-open')
+    }
+
+    updateStepJourney(stepId, journeyId)
+    return
+  }
 })
 
 // ─── Init ───────────────────────────────────────────────────────────────────
