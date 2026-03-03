@@ -36,6 +36,31 @@ The result is a chronic sense of underaccomplishment — not because enough isn'
 
 ---
 
+## Design Principles
+
+These constraints govern all feature design and implementation decisions.
+
+### Today vs Journey Hemisphere Separation
+
+The application operates in two distinct hemispheres:
+
+- **Today hemisphere** — Present-focused, action-oriented. Shows today's steps as simple accumulation. No averages, comparisons, streaks, or performance metrics. The counter ("X steps today") is a tally, not a score.
+- **Journey hemisphere** — Retrospective, pattern-recognizing. Rolling averages, PERMA inference, progress visualizations, and trend data live here. Separate views, separate mental mode.
+
+This is an architectural boundary. Features must not bleed between hemispheres.
+
+### Interaction Weight Constraint
+
+Entering text in the input bar is the heaviest interaction in the entire application. Step tiles should feel weightless — text accumulating on the page, not interactive dashboards. New features must pass the weight test: does this make the Today view heavier? If yes, it belongs in the Journey hemisphere or doesn't belong at all.
+
+### No Self-Assessment Mechanics
+
+The app never asks users to rate, score, or evaluate their own effort. PERMA and framework signals are inferred from behavioral patterns (frequency, consistency, journey diversity), never from self-reported input. Quality tags, mood trackers, effort ratings, satisfaction scores, and similar mechanics are explicitly excluded.
+
+Factual declarations on Paths (e.g., "I earn from this") are acceptable — they describe objective attributes, not subjective self-evaluation.
+
+---
+
 ## Theoretical Frameworks
 
 Progress tracking maps Step completions against three established frameworks:
@@ -81,6 +106,10 @@ Step (atomic unit of work)
 | **Milestone** | A large task composed of smaller Steps (e.g., "Launch Q1 Product Roadmap"). |
 | **Step** | The atomic unit of work. The primary input of the app. |
 
+### Language Boundaries
+
+The four data-tier terms (Journey, Path, Milestone, Step) are the only structural terms used in the UI. The visualization spec defines a parallel walking metaphor (Terrain, Trail, Waypoint, Footprint) for internal design guidance — these metaphors govern visual decisions but never appear as user-facing labels or copy.
+
 ---
 
 ## Default Journeys
@@ -106,8 +135,6 @@ Rooted in the Wheel of Life framework. Shipped as defaults, user-customizable.
 
 ### Progress Tracking
 - Aggregated views across day, week, month, and year
-- Velocity measured by time-to-completion per Step
-- Derived metrics: average completion time per Journey, per Path, over time
 - Output layer maps completions against Wheel of Life, PERMA, and Ikigai
 
 ### Categorization

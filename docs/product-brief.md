@@ -64,6 +64,12 @@ Build a mobile-first progressive web app with a four-tier data model (Journey ->
 
 Risk levels to be assessed during technical and design discovery.
 
+### Evolved Constraints (Post-Discovery)
+
+- Quality tags, satisfaction ratings, and all self-assessment mechanics have been excluded. Framework signals are derived entirely from behavioral data.
+- The Today view is a dedicated "accumulation hemisphere" with no performance metrics, comparisons, or retrospective data. Framework visualizations live in separate Journey views.
+- Entering text is the heaviest user interaction. Step tiles are weightless.
+
 ## Constraints
 
 **Technical Constraints:**

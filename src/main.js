@@ -57,6 +57,7 @@ if (eyebrow) {
 let steps = []
 let journeys = []
 let selectedJourneyId = null
+let currentUserId = null
 const renderedIds = new Set()
 let authMode = 'signup' // 'signup' | 'signin'
 
@@ -69,21 +70,19 @@ function hydrateIcons() {
   })
 }
 
-// ─── Progress ───────────────────────────────────────────────────────────────
+// ─── Progress (Momentum Line) ───────────────────────────────────────────────
 
 function updateProgress() {
   if (!progressEl) return
   const total = steps.length
-  const done = steps.filter((s) => s.completed).length
-  if (total === 0 || done === 0) {
+
+  if (total === 0) {
     progressEl.textContent = ''
     return
   }
-  if (done === total) {
-    progressEl.textContent = `All ${total} step${total === 1 ? '' : 's'} done`
-    return
-  }
-  progressEl.textContent = `${done} of ${total} step${total === 1 ? '' : 's'} done`
+
+  const noun = total === 1 ? 'step' : 'steps'
+  progressEl.textContent = `${total} ${noun} today`
 }
 
 // ─── Journey Picker (form) ───────────────────────────────────────────────────
@@ -272,57 +271,132 @@ function buildItemJourneyPicker(step) {
   return wrapper
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatStepTime(dateStr) {
+  const d = new Date(dateStr)
+  const now = new Date()
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+
+  if (isToday) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function groupStepsByJourney(stepsList) {
+  const groups = new Map()
+  for (const step of stepsList) {
+    const slug = step.journeys?.slug ?? '_none'
+    if (!groups.has(slug)) {
+      groups.set(slug, {
+        journey: step.journeys,
+        steps: [],
+      })
+    }
+    groups.get(slug).steps.push(step)
+  }
+  // Sort groups by journey sort_order (fall back to order of first appearance)
+  const sorted = [...groups.values()]
+  sorted.sort((a, b) => {
+    const aOrder = journeys.findIndex((j) => j.slug === a.journey?.slug)
+    const bOrder = journeys.findIndex((j) => j.slug === b.journey?.slug)
+    return aOrder - bOrder
+  })
+  return sorted
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────────
+
 function renderSteps() {
   itemsContainer.replaceChildren()
 
   if (steps.length === 0) {
     const empty = document.createElement('p')
     empty.className = 'todo-empty'
-    empty.textContent = 'What will you do today? Add your first step above.'
+    empty.textContent = 'Every journey starts with a single step.'
     itemsContainer.append(empty)
     updateProgress()
     return
   }
 
-  for (const step of steps) {
-    const journey = step.journeys
+  const groups = groupStepsByJourney(steps)
 
-    const item = document.createElement('article')
-    item.className = 'todo-item'
-    if (step.completed) item.classList.add('is-completed')
-    if (journey?.slug) item.dataset.journeySlug = journey.slug
+  for (const group of groups) {
+    const journey = group.journey
 
-    const isNew = !renderedIds.has(step.id)
-    if (isNew) {
-      item.classList.add('is-new')
-      renderedIds.add(step.id)
+    // Journey group header
+    const header = document.createElement('div')
+    header.className = 'journey-group__header'
+    if (journey?.slug) header.dataset.journeySlug = journey.slug
+
+    const dot = document.createElement('span')
+    dot.className = 'journey-group__dot'
+    dot.setAttribute('aria-hidden', 'true')
+    if (journey?.slug) dot.dataset.journeySlug = journey.slug
+
+    const name = document.createElement('span')
+    name.className = 'journey-group__name'
+    name.textContent = journey?.name ?? 'Uncategorized'
+
+    const count = document.createElement('span')
+    count.className = 'journey-group__count'
+    count.textContent = group.steps.length
+
+    header.append(dot, name, count)
+    itemsContainer.append(header)
+
+    // Steps within group
+    for (const step of group.steps) {
+      const item = document.createElement('article')
+      item.className = 'todo-item'
+      if (step.completed) item.classList.add('is-completed')
+      if (journey?.slug) item.dataset.journeySlug = journey.slug
+      item.dataset.stepId = step.id
+
+      const isNew = !renderedIds.has(step.id)
+      if (isNew) {
+        item.classList.add('is-new')
+        renderedIds.add(step.id)
+      }
+
+      // Layer 1: Journey dot + title + timestamp
+      const tileDot = document.createElement('span')
+      tileDot.className = 'todo-item__dot'
+      tileDot.setAttribute('aria-hidden', 'true')
+      if (journey?.slug) tileDot.dataset.journeySlug = journey.slug
+
+      const text = document.createElement('p')
+      text.className = 'todo-item__text'
+      text.textContent = step.text
+
+      const timestamp = document.createElement('time')
+      timestamp.className = 'todo-item__timestamp'
+      timestamp.textContent = formatStepTime(step.created_at)
+      if (step.created_at) timestamp.setAttribute('datetime', step.created_at)
+
+      const actions = document.createElement('div')
+      actions.className = 'todo-item__actions'
+
+      const itemPicker = buildItemJourneyPicker(step)
+
+      const deleteButton = document.createElement('button')
+      deleteButton.className = 'todo-item__delete-button'
+      deleteButton.type = 'button'
+      deleteButton.dataset.todoId = step.id
+      deleteButton.setAttribute('aria-label', `Delete "${step.text}"`)
+
+      const icon = document.createElement('i')
+      icon.dataset.lucide = 'x'
+      deleteButton.append(icon)
+
+      actions.append(itemPicker, deleteButton)
+      item.append(tileDot, text, timestamp, actions)
+      itemsContainer.append(item)
     }
-
-    const toggle = document.createElement('input')
-    toggle.className = 'todo-item__toggle'
-    toggle.type = 'checkbox'
-    toggle.checked = step.completed
-    toggle.dataset.todoId = step.id
-    toggle.setAttribute('aria-label', `Mark "${step.text}" as complete`)
-
-    const text = document.createElement('p')
-    text.className = 'todo-item__text'
-    text.textContent = step.text
-
-    const itemPicker = buildItemJourneyPicker(step)
-
-    const deleteButton = document.createElement('button')
-    deleteButton.className = 'todo-item__delete-button'
-    deleteButton.type = 'button'
-    deleteButton.dataset.todoId = step.id
-    deleteButton.setAttribute('aria-label', `Delete "${step.text}"`)
-
-    const icon = document.createElement('i')
-    icon.dataset.lucide = 'x'
-    deleteButton.append(icon)
-
-    item.append(toggle, text, itemPicker, deleteButton)
-    itemsContainer.append(item)
   }
 
   hydrateIcons()
@@ -367,7 +441,7 @@ async function loadSteps() {
 async function addStep(text, journeyId) {
   const { data, error } = await supabase
     .from('steps')
-    .insert({ text, completed: false, journey_id: journeyId })
+    .insert({ text, completed: false, journey_id: journeyId, user_id: currentUserId })
     .select('*, journeys(id, name, slug)')
     .single()
 
@@ -534,9 +608,16 @@ authForm?.addEventListener('submit', async (event) => {
   clearAuthError()
 
   if (authMode === 'signup') {
-    const { error } = await signUp(email, password)
+    const { data: signUpData, error } = await signUp(email, password)
     if (error) {
       showAuthError(error.message)
+      authSubmitButton.disabled = false
+      return
+    }
+    // If email confirmation is required, the user object will have
+    // an unconfirmed email. Let them know to check their inbox.
+    if (signUpData?.user?.email && !signUpData?.user?.email_confirmed_at) {
+      showAuthError('Check your email to confirm your account.')
       authSubmitButton.disabled = false
       return
     }
@@ -583,18 +664,7 @@ form.addEventListener('submit', (event) => {
   addStep(text, selectedJourneyId)
 })
 
-itemsContainer.addEventListener('change', (event) => {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement) || !target.matches('.todo-item__toggle')) return
-
-  const id = target.dataset.todoId
-  const step = steps.find((s) => s.id === id)
-  if (!step) return
-  step.completed = target.checked
-  renderSteps()
-  toggleStep(id, target.checked)
-})
-
+// Unified click handler for items container
 itemsContainer.addEventListener('click', (event) => {
   const target = event.target
   if (!(target instanceof Element)) return
@@ -654,6 +724,20 @@ itemsContainer.addEventListener('click', (event) => {
     updateStepJourney(stepId, journeyId)
     return
   }
+
+  // Toggle completion by clicking the tile body (saturation-based, no checkbox)
+  const tile = target.closest('.todo-item')
+  if (!tile) return
+  // Don't toggle if clicking actions area
+  if (target.closest('.todo-item__actions')) return
+
+  const id = tile.dataset.stepId
+  const step = steps.find((s) => s.id === id)
+  if (!step) return
+
+  step.completed = !step.completed
+  renderSteps()
+  toggleStep(id, step.completed)
 })
 
 // ─── Init ───────────────────────────────────────────────────────────────────
@@ -661,6 +745,7 @@ itemsContainer.addEventListener('click', (event) => {
 hydrateIcons()
 
 onAuthStateChange((_event, session) => {
+  currentUserId = session?.user?.id ?? null
   updateHeaderForUser(session?.user ?? null)
   steps = []
   renderedIds.clear()
@@ -668,15 +753,24 @@ onAuthStateChange((_event, session) => {
 })
 
 async function init() {
-  // Load journeys first so the picker is populated before any interaction
-  await loadJourneys()
-
   const { data } = await getSession()
   if (!data.session) {
-    await signInAnonymously()
+    const { error } = await signInAnonymously()
+    if (error) {
+      console.error('Failed to sign in anonymously:', error.message)
+      // Still try to load journeys/steps in case RLS allows it
+    }
     // onAuthStateChange will fire → loadSteps()
   } else {
+    currentUserId = data.session.user.id
     updateHeaderForUser(data.session.user)
+  }
+
+  // Load journeys after auth so RLS filters by the authenticated user
+  await loadJourneys()
+
+  // If we already had a session (no onAuthStateChange fired), load steps now
+  if (data.session) {
     loadSteps()
   }
 }

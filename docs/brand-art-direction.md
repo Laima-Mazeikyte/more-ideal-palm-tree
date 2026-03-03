@@ -45,6 +45,8 @@ Your life is moving forward, even in small steps.
 - Alarmist color usage for normal states
 - Dense "dashboard overload" layouts
 - High-friction data entry
+- Self-assessment prompts (quality ratings, satisfaction scores, mood trackers)
+- Performance comparisons on the daily view (averages, streaks, velocity labels)
 
 ## 2) Art Direction North Star
 
@@ -156,3 +158,5 @@ Use this checklist in design reviews and implementation QA.
 - Prefer semantic tokens in components; only base tokens in token-definition layers.
 - If a new visual need appears repeatedly, add a semantic token before adding local hard-coded styles.
 - Any new pattern that increases urgency, competition, or shame requires explicit design review.
+- Any feature that asks the user to evaluate their own effort requires explicit design review and is presumed rejected.
+- The Today view accepts only one input: step text. Any additional input mechanism violates the interaction weight constraint.

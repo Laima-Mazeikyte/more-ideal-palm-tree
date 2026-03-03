@@ -428,6 +428,7 @@ button:focus-visible {
 
 .todo-empty {
   margin: var(--space-xl) 0 0;
+  font-family: var(--font-family-heading);
   font-size: var(--font-size-md);
   color: var(--color-text-muted);
   font-style: italic;
@@ -457,86 +458,105 @@ button:focus-visible {
   pointer-events: none;
 }
 
+/* ─── Journey Group Headers ─────────────────────────────────────────────── */
+
+.journey-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg) 0 var(--space-xs);
+}
+
+.journey-group__header:first-child {
+  padding-top: var(--space-sm);
+}
+
+.journey-group__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.journey-group__dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
+.journey-group__dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
+.journey-group__dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
+.journey-group__dot[data-journey-slug="connections"] { background: var(--journey-connections); }
+.journey-group__dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
+
+.journey-group__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.journey-group__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+/* ─── Step Tile ──────────────────────────────────────────────────────────── */
+
 .todo-item {
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md) var(--space-sm) var(--space-md) 1.125rem;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-sm) var(--space-md) var(--space-sm);
   border: 0;
-  border-bottom: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 55%, transparent 45%);
+  border-bottom: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 40%, transparent 60%);
   border-radius: 0;
   background: transparent;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--motion-ease);
 }
 
-.todo-item::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 1.25rem;
-  border-radius: 1px;
+/* Journey color dot — primary visual anchor per spec */
+.todo-item__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
   background: var(--color-border);
+  flex-shrink: 0;
   transition:
-    height var(--motion-fast) var(--motion-ease),
     background-color var(--motion-fast) var(--motion-ease),
     opacity var(--motion-fast) var(--motion-ease);
 }
 
-.todo-item:hover::before {
-  height: 1.75rem;
-  background: color-mix(in oklab, var(--color-accent) 70%, var(--color-border) 30%);
+.todo-item__dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
+.todo-item__dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
+.todo-item__dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
+.todo-item__dot[data-journey-slug="connections"] { background: var(--journey-connections); }
+.todo-item__dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
+
+/* Timestamp */
+.todo-item__timestamp {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.todo-item[data-journey-slug="vitality"]::before    { background: var(--journey-vitality); }
-.todo-item[data-journey-slug="pursuits"]::before    { background: var(--journey-pursuits); }
-.todo-item[data-journey-slug="prosperity"]::before  { background: var(--journey-prosperity); }
-.todo-item[data-journey-slug="connections"]::before { background: var(--journey-connections); }
-.todo-item[data-journey-slug="foundations"]::before { background: var(--journey-foundations); }
+/* Actions wrapper */
+.todo-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
 
 .todo-item.is-new {
   animation: item-appear 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.todo-item__toggle {
-  appearance: none;
-  width: 1.1rem;
-  height: 1.1rem;
-  margin: 0;
-  border: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 68%, var(--brand-200) 32%);
-  border-radius: var(--radius-xl);
-  background: color-mix(in oklab, var(--color-bg) 90%, var(--color-surface) 10%);
-  cursor: pointer;
-  display: inline-grid;
-  place-content: center;
-}
-
-.todo-item__toggle::before {
-  content: "";
-  width: 0.6rem;
-  height: 0.6rem;
-  background: var(--color-primary);
-  clip-path: polygon(14% 44%, 0% 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-  transform: scale(0);
-  transition: transform var(--motion-fast) var(--motion-ease);
-}
-
-.todo-item__toggle:checked {
-  border-color: color-mix(in oklab, var(--color-primary) 65%, var(--color-border) 35%);
-  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-bg) 90%);
-}
-
-.todo-item__toggle:checked::before {
-  transform: scale(1);
-}
-
-.todo-item__toggle:focus,
-.todo-item__toggle:focus-visible {
-  outline: var(--focus-outline-width) solid var(--color-focus-ring);
-  outline-offset: var(--focus-outline-offset);
+/* Hover feedback on tile */
+.todo-item:hover {
+  background: color-mix(in oklab, var(--color-surface) 40%, transparent);
 }
 
 .todo-item__text {
@@ -596,26 +616,21 @@ button:focus-visible {
   pointer-events: auto;
 }
 
+/* Completion = saturation shift (per spec: no checkboxes, no strikethrough) */
 .todo-item.is-completed {
-  background: transparent;
+  opacity: 0.45;
 }
 
-.todo-item.is-completed::before {
-  height: 0.875rem;
-  background: var(--color-success);
-  opacity: 0.75;
-}
-
-.todo-item.is-completed:hover::before {
-  height: 0.875rem;
-  background: var(--color-success);
-  opacity: 0.9;
+.todo-item.is-completed:hover {
+  opacity: 0.6;
 }
 
 .todo-item.is-completed .todo-item__text {
-  color: color-mix(in oklab, var(--color-text-muted) 80%, var(--color-border) 20%);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in oklab, var(--color-text-muted) 50%, transparent);
+  color: var(--color-text-muted);
+}
+
+.todo-item.is-completed .todo-item__dot {
+  opacity: 0.5;
 }
 
 /* ─── Journey Badge ──────────────────────────────────────────────────────── */

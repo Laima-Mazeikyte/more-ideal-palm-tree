@@ -10,9 +10,9 @@ Frameworks are **not user-facing features**. Users input Steps. The system deriv
 
 | Framework | Operates At | Question Answered | Input Source |
 |-----------|-------------|-------------------|-------------|
-| Wheel of Life | Journey level | "Is my life balanced?" | Step distribution + optional monthly satisfaction rating |
-| PERMA | Step → Journey aggregation | "Am I flourishing?" | Quality tags, activity types, frequency, duration |
-| Ikigai | Path level | "Where is authentic meaning?" | Frequency, quality tags, reflection notes, progression |
+| Wheel of Life | Journey level | "Is my life balanced?" | Step distribution across Journeys |
+| PERMA | Step → Journey aggregation | "Am I flourishing?" | Activity frequency, journey distribution, path associations, milestone progression |
+| Ikigai | Path level | "Where is authentic meaning?" | Frequency, path associations, milestone progression |
 
 ---
 
@@ -39,9 +39,9 @@ The consolidation from 8 to 5 domains reduces cognitive load while preserving th
 ### Application in Journey Tracker
 - **Data source:** Count and distribution of Steps across the five Journeys over time
 - **Visualization:** Five-spoke wheel showing relative investment per Journey
-- **User input:** Optional monthly satisfaction rating (1–10) per Journey, triangulated against behavioral data
+- **User input:** None. Balance is derived entirely from Step distribution.
 - **Insight type:** "You've invested heavily in Prosperity this month. Connections has declined 40% from last quarter."
-- **Frequency:** Wheel shape updates continuously from Step data. Satisfaction prompt monthly.
+- **Frequency:** Wheel shape updates continuously from Step data.
 
 ### Key Design Principle
 The wheel reveals *distribution*, not *deficiency*. An imbalanced wheel is diagnostic information, not a failure state. Language must be observational ("Connections is lower this quarter") never judgmental ("You're neglecting relationships").
@@ -57,34 +57,34 @@ Developed by Martin Seligman in *Flourish* (2011), evolving from his earlier Aut
 
 | Pillar | Definition | How It's Signaled in Steps |
 |--------|-----------|---------------------------|
-| **P** — Positive Emotion | Joy, gratitude, serenity, interest, hope, pride, amusement, inspiration, awe, love | Quality tags indicating positive felt experience (💪 🔥 ⚡) |
-| **E** — Engagement | Flow states, deep absorption, challenge-skill balance (Csíkszentmihályi) | Complex/challenging Steps, duration signals, 🔥 flow tags |
+| **P** — Positive Emotion | Joy, gratitude, serenity, interest, hope, pride, amusement, inspiration, awe, love | Step frequency + journey diversity indicating active life engagement |
+| **E** — Engagement | Flow states, deep absorption, challenge-skill balance (Csíkszentmihályi) | Session clustering, consistent daily patterns, deep Path investment |
 | **R** — Relationships | Positive, meaningful connections with others | Steps involving other people, Connections Journey activity |
-| **M** — Meaning | Serving something larger than self, values-aligned action | Service-oriented Steps, values-aligned Paths, reflection notes |
-| **A** — Accomplishment | Achievement, competence, mastery, goal completion | Milestone progress, Step completion frequency, velocity trends |
+| **M** — Meaning | Serving something larger than self, values-aligned action | Steps associated with Paths, multi-journey engagement |
+| **A** — Accomplishment | Achievement, competence, mastery, goal completion | Milestone progress, Step completion frequency |
 
 ### PERMA+ Extensions
 Research has proposed additional dimensions: Physical Health (already captured by Vitality Journey), Mindfulness, Economic Security, Loneliness. These are captured implicitly through the Journey/Path structure rather than as separate PERMA dimensions.
 
 ### Application in Journey Tracker
-- **Data source:** System-inferred from Step behavior, quality tags, and activity patterns
+- **Data source:** System-inferred entirely from Step frequency, journey distribution, path associations, and milestone progression
 - **Visualization:** Five horizontal bars showing derived signal strength per PERMA dimension
-- **User input:** None required. Quality tags (optional on Steps) feed the inference. Reflection notes (optional) refine Meaning signals.
-- **Insight type:** "Strong Accomplishment signals this week. Engagement is lower — fewer complex or challenging Steps. Consider activities that stretch your skills."
+- **User input:** None. All signals derived from behavioral patterns — what you do and how consistently you do it.
+- **Insight type:** "Strong Accomplishment signals this week. Engagement is lower — fewer consistent sessions across your Paths."
 - **Frequency:** Dashboard updated weekly. Trend comparison monthly.
 
 ### Key Design Principle
-PERMA operates as a **derived output layer**, never an input form. The Opus research is explicit: "Instead of asking 'Rate your PERMA elements' (framework assessment burden), ask 'How did that feel?' (quality tags; behavioral input). System infers PERMA signals from accumulated quality tags."
+PERMA operates as a **derived output layer**, never an input form. The system infers well-being signals entirely from behavioral patterns — what you do and how consistently you do it — never from self-assessment. No quality tags, mood ratings, or satisfaction prompts.
 
 ### Signal Inference Logic
 
 | PERMA Dimension | Inferred From |
 |-----------------|---------------|
-| Positive Emotion | Proportion of Steps with positive quality tags (💪 ⚡ 🎯) |
-| Engagement | Steps with high duration, complexity indicators, or 🔥 flow tags |
+| Positive Emotion | Step frequency + journey diversity (active engagement across life domains signals positive emotional state) |
+| Engagement | Session clustering, consistent daily patterns, deep Path investment (regular return to the same Path) |
 | Relationships | Steps tagged to Connections Journey or involving other people |
-| Meaning | Steps in service/values-aligned Paths, reflection notes mentioning purpose |
-| Accomplishment | Milestone completion rate, Step completion frequency, velocity trends |
+| Meaning | Steps associated with Paths, multi-journey engagement (investment in purpose-aligned contexts) |
+| Accomplishment | Milestone completion rate, Step completion frequency |
 
 ---
 
@@ -108,10 +108,10 @@ Japanese concept with dual interpretations relevant to Journey Tracker:
 
 | Circle | Signal Source | Example |
 |--------|--------------|---------|
-| What You Love | Frequency + positive quality tags + reflection notes | "I write fiction 5x/week and tag it with 🔥 regularly" |
-| What You're Good At | Progression difficulty, time investment, skill-development Steps | "My running pace has improved 15% over 3 months" |
-| What the World Needs | Path category, service orientation, social impact indicators | "Teaching yoga benefits others' health" |
-| What You Can Be Paid For | User-tagged economic value (explicit input if earning from activity) | "Freelance design generates income" |
+| What You Love | Frequency + consistency + voluntary return patterns | "I write fiction 5x/week and keep coming back to it" |
+| What You're Good At | Milestone progression + increasing complexity patterns | "Completed 3 running milestones in 3 months" |
+| What the World Needs | User-declared factual attribute on Path ("This benefits others") | "Teaching yoga benefits others' health" |
+| What You Can Be Paid For | User-declared factual attribute on Path ("I earn from this") | "Freelance design generates income" |
 
 ### Named Deficiency States (Opus Research Finding)
 
@@ -127,8 +127,8 @@ When a Path has three of four circles but is missing one:
 These states are not judgments — they're awareness prompts. Many valuable Paths have only 1–2 circles filled, and that's appropriate.
 
 ### Application in Journey Tracker
-- **Data source (daily ikigai):** Quality tags on Steps, frequency patterns, reflection notes
-- **Data source (Path alignment):** Love/Skill/Need inferred from behavior; Paid is explicit user input
+- **Data source (daily ikigai):** Step frequency patterns, voluntary return to activities
+- **Data source (Path alignment):** Love/Skill inferred from behavioral patterns; Need/Paid are factual user declarations on Paths
 - **Visualization:** Per-Path alignment indicator showing which circles are filled
 - **Insight type:** "Your Novel Writing path shows high Love and developing Skill. It doesn't pay yet — is that intentional, or something to explore?"
 - **Frequency:** Ikigai signals update continuously. Path alignment review monthly.
@@ -143,27 +143,27 @@ Ikigai analysis must never prescribe that all four circles need filling. Many of
 The three frameworks analyzing the same behavioral data create a composite picture. When signals align, confidence is high. When they diverge, the system surfaces the tension as an insight.
 
 ### Alignment Example
-User has high Vitality Steps + positive quality tags + improving Milestone pace.
+User has high Vitality Steps + consistent daily patterns + improving Milestone pace.
 - **Wheel:** Vitality domain is well-attended
 - **PERMA:** Strong Positive Emotion and Accomplishment signals
 - **Ikigai:** Fitness Path shows high Love and Skill
 - **Insight:** "Your fitness practice is thriving across all dimensions."
 
 ### Divergence Example
-User reports high Relationships satisfaction (Wheel: 8/10) but Connections Steps are declining.
-- **Wheel:** Satisfaction reported high
-- **PERMA:** Relationships signal weakening (fewer relational Steps)
+User has high Connections wheel spoke but Connections Step frequency is declining week over week.
+- **Wheel:** Connections domain well-attended over the quarter
+- **PERMA:** Relationships signal weakening (fewer recent relational Steps)
 - **Ikigai:** Not applicable at this level
-- **Insight:** "You report strong relationship satisfaction, but connection time is trending down. Is quality compensating for quantity, or is satisfaction lagging behind behavioral change?"
+- **Insight:** "Connections has been a strong area overall, but activity has been quieter recently. Is quality compensating for quantity?"
 
 ### Data Flow Summary
 
 ```
 User logs Step
-  → Step has: activity, Journey tag, optional Path/Milestone, optional quality tag
+  → Step has: activity text, Journey tag, optional Path/Milestone
     → Wheel: Step counted toward Journey domain balance
-    → PERMA: Quality tags and activity type feed signal inference
-    → Ikigai: Step frequency and tags contribute to Path alignment analysis
+    → PERMA: Frequency, journey diversity, and path associations feed signal inference
+    → Ikigai: Step frequency and Path associations contribute to alignment analysis
       → All three aggregate upward to produce composite life picture
 ```
 
@@ -175,6 +175,6 @@ For the next build phase, framework implementation should follow this order:
 
 1. **Wheel of Life (Journey balance)** — Simplest to implement. Requires only Step-count distribution across Journeys. No inference logic needed. Ship the five-spoke wheel visualization first.
 
-2. **PERMA signals** — Requires quality tags on Steps (optional field) and inference logic mapping tags → dimensions. Can ship as a "Well-being snapshot" once quality tags exist in the data model.
+2. **PERMA signals** — Requires behavioral inference logic mapping frequency, journey diversity, path associations, and milestone progression → dimensions. Can ship as a "Well-being snapshot" once Paths and Milestones exist in the data model.
 
-3. **Ikigai alignment** — Most complex. Requires Path-level analysis against four circles, with Love and Skill inferred from behavior and Paid as explicit user input. Ship after Paths are fully implemented and used.
+3. **Ikigai alignment** — Most complex. Requires Path-level analysis against four circles, with Love and Skill inferred from behavioral patterns and Need/Paid as factual user declarations. Ship after Paths are fully implemented and used.
