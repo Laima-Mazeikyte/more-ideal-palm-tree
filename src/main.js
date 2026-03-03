@@ -14,6 +14,7 @@ import { loadPaths, createPath, addStepToPath, removeStepFromPath, loadStepPaths
 import { loadMilestones, createMilestone, calculateProgress } from './milestones.js'
 import { renderWeekView } from './week-view.js'
 import { getView, setView, buildBreadcrumb } from './views.js'
+import { createPicker } from './picker.js'
 
 // ─── DOM ────────────────────────────────────────────────────────────────────
 
@@ -23,23 +24,10 @@ const itemsContainer = document.querySelector('.todo-app__items')
 const eyebrow = document.querySelector('.todo-app__eyebrow')
 const progressEl = document.querySelector('.todo-app__progress')
 
-const journeyPickerTrigger = document.querySelector('.journey-picker__trigger')
-const journeyPickerDropdown = document.querySelector('.journey-picker__dropdown')
-const journeyPickerLabel = document.querySelector('.journey-picker__label')
-const journeyPickerDot = document.querySelector('.journey-picker__dot')
-
 const pathPickerRoot = document.querySelector('.path-picker')
-const pathPickerTrigger = document.querySelector('.path-picker__trigger')
-const pathPickerDropdown = document.querySelector('.path-picker__dropdown')
-const pathPickerOptions = document.querySelector('.path-picker__options')
-const pathPickerLabel = document.querySelector('.path-picker__label')
 const pathPickerCreateInput = document.querySelector('.path-picker__create-input')
 
 const milestonePickerRoot = document.querySelector('.milestone-picker')
-const milestonePickerTrigger = document.querySelector('.milestone-picker__trigger')
-const milestonePickerDropdown = document.querySelector('.milestone-picker__dropdown')
-const milestonePickerOptions = document.querySelector('.milestone-picker__options')
-const milestonePickerLabel = document.querySelector('.milestone-picker__label')
 const milestonePickerCreateInput = document.querySelector('.milestone-picker__create-input')
 
 const weekViewContainer = document.querySelector('.week-view')
@@ -114,184 +102,169 @@ function updateProgress() {
   progressEl.textContent = `${total} ${noun} today`
 }
 
-// ─── Journey Picker (form) ───────────────────────────────────────────────────
+// ─── Picker Helpers ──────────────────────────────────────────────────────────
 
-function populateJourneyPicker() {
-  if (!journeyPickerDropdown) return
-  journeyPickerDropdown.replaceChildren()
+function buildJourneyOption(journey, isSelected) {
+  const option = document.createElement('button')
+  option.type = 'button'
+  option.className = 'journey-picker__option'
+  option.setAttribute('role', 'option')
+  option.dataset.journeyId = journey.id
+  option.dataset.journeySlug = journey.slug
+  option.setAttribute('aria-selected', String(isSelected))
 
-  for (const journey of journeys) {
-    const option = document.createElement('button')
-    option.type = 'button'
-    option.className = 'journey-picker__option'
-    option.setAttribute('role', 'option')
-    option.dataset.journeyId = journey.id
-    option.dataset.journeySlug = journey.slug
-    option.setAttribute('aria-selected', String(journey.id === selectedJourneyId))
+  const dot = document.createElement('span')
+  dot.className = 'journey-picker__option-dot'
+  dot.setAttribute('aria-hidden', 'true')
+  dot.dataset.journeySlug = journey.slug
 
-    const dot = document.createElement('span')
-    dot.className = 'journey-picker__option-dot'
-    dot.setAttribute('aria-hidden', 'true')
-    dot.dataset.journeySlug = journey.slug
+  const label = document.createElement('span')
+  label.className = 'journey-picker__option-label'
+  label.textContent = journey.name
 
-    const label = document.createElement('span')
-    label.className = 'journey-picker__option-label'
-    label.textContent = journey.name
+  const checkIcon = document.createElement('i')
+  checkIcon.dataset.lucide = 'check'
+  checkIcon.className = 'journey-picker__option-check'
 
-    const checkIcon = document.createElement('i')
-    checkIcon.dataset.lucide = 'check'
-    checkIcon.className = 'journey-picker__option-check'
-
-    option.append(dot, label, checkIcon)
-    journeyPickerDropdown.append(option)
-  }
-
-  hydrateIcons()
-
-  // Select the first journey if nothing is selected yet
-  if (!selectedJourneyId && journeys.length > 0) {
-    selectJourney(journeys[0].id)
-  } else if (selectedJourneyId) {
-    updateTriggerDisplay()
-  }
+  option.append(dot, label, checkIcon)
+  return option
 }
 
-function selectJourney(journeyId) {
-  selectedJourneyId = journeyId
-  updateTriggerDisplay()
+function buildSimpleOption(item, isSelected, prefix, idKey) {
+  const option = document.createElement('button')
+  option.type = 'button'
+  option.className = `${prefix}__option`
+  option.setAttribute('role', 'option')
+  option.dataset[idKey] = item.id
+  option.setAttribute('aria-selected', String(isSelected))
 
-  // Milestone picker is filtered by journey — reset and repopulate
-  selectedMilestoneId = null
-  populateMilestonePicker()
+  const label = document.createElement('span')
+  label.className = `${prefix}__option-label`
+  label.textContent = item.name
 
-  if (!journeyPickerDropdown) return
-  journeyPickerDropdown.querySelectorAll('.journey-picker__option').forEach((opt) => {
-    opt.setAttribute('aria-selected', String(opt.dataset.journeyId === journeyId))
-  })
+  const checkIcon = document.createElement('i')
+  checkIcon.dataset.lucide = 'check'
+  checkIcon.className = `${prefix}__option-check`
+
+  option.append(label, checkIcon)
+  return option
 }
 
-function updateTriggerDisplay() {
-  const journey = journeys.find((j) => j.id === selectedJourneyId)
-  if (!journey) return
-  if (journeyPickerLabel) journeyPickerLabel.textContent = journey.name
-  if (journeyPickerDot) journeyPickerDot.dataset.journeySlug = journey.slug
-  if (journeyPickerTrigger) journeyPickerTrigger.dataset.journeySlug = journey.slug
-}
+// ─── Picker Instances ────────────────────────────────────────────────────────
 
-function openJourneyPicker() {
-  if (!journeyPickerDropdown || !journeyPickerTrigger) return
-  journeyPickerDropdown.hidden = false
-  journeyPickerTrigger.setAttribute('aria-expanded', 'true')
-  journeyPickerTrigger.classList.add('is-open')
-}
-
-function closeJourneyPicker() {
-  if (!journeyPickerDropdown || !journeyPickerTrigger) return
-  journeyPickerDropdown.hidden = true
-  journeyPickerTrigger.setAttribute('aria-expanded', 'false')
-  journeyPickerTrigger.classList.remove('is-open')
-}
-
-// ─── Path Picker (form) ──────────────────────────────────────────────────────
-
-function populatePathPicker() {
-  if (!pathPickerOptions) return
-  pathPickerOptions.replaceChildren()
-
-  for (const path of paths) {
-    const option = document.createElement('button')
-    option.type = 'button'
-    option.className = 'path-picker__option'
-    option.setAttribute('role', 'option')
-    option.dataset.pathId = path.id
-    option.setAttribute('aria-selected', String(path.id === selectedPathId))
-
-    const label = document.createElement('span')
-    label.className = 'path-picker__option-label'
-    label.textContent = path.name
-
-    const checkIcon = document.createElement('i')
-    checkIcon.dataset.lucide = 'check'
-    checkIcon.className = 'path-picker__option-check'
-
-    option.append(label, checkIcon)
-    pathPickerOptions.append(option)
-  }
-
-  // Add a "None" option to deselect
-  if (paths.length > 0) {
-    const none = document.createElement('button')
-    none.type = 'button'
-    none.className = 'path-picker__option path-picker__option--none'
-    none.setAttribute('role', 'option')
-    none.dataset.pathId = ''
-    none.setAttribute('aria-selected', String(!selectedPathId))
-
-    const label = document.createElement('span')
-    label.className = 'path-picker__option-label'
-    label.textContent = 'None'
-    none.append(label)
-    pathPickerOptions.prepend(none)
-  }
-
-  hydrateIcons()
-  updatePathTriggerDisplay()
-}
-
-function selectPath(pathId) {
-  selectedPathId = pathId || null
-  updatePathTriggerDisplay()
-
-  if (!pathPickerOptions) return
-  pathPickerOptions.querySelectorAll('.path-picker__option').forEach((opt) => {
-    const optPathId = opt.dataset.pathId
-    opt.setAttribute('aria-selected', String(optPathId === (selectedPathId ?? '')))
-  })
-}
-
-function updatePathTriggerDisplay() {
-  const path = paths.find((p) => p.id === selectedPathId)
-  if (pathPickerLabel) pathPickerLabel.textContent = path?.name ?? 'Path'
-  if (pathPickerTrigger) {
-    pathPickerTrigger.classList.toggle('is-selected', !!path)
-  }
-}
-
-function openPathPicker() {
-  if (!pathPickerDropdown || !pathPickerTrigger) return
-  pathPickerDropdown.hidden = false
-  pathPickerTrigger.setAttribute('aria-expanded', 'true')
-  pathPickerTrigger.classList.add('is-open')
-}
-
-function closePathPicker() {
-  if (!pathPickerDropdown || !pathPickerTrigger) return
-  pathPickerDropdown.hidden = true
-  pathPickerTrigger.setAttribute('aria-expanded', 'false')
-  pathPickerTrigger.classList.remove('is-open')
-}
-
-// ─── Path Picker Events ──────────────────────────────────────────────────────
-
-pathPickerTrigger?.addEventListener('click', (event) => {
-  if (isAnonymousUser) return
-  event.stopPropagation()
-  closeJourneyPicker()
-  closeMilestonePicker()
-  closeAllItemJourneyPickers()
-  if (pathPickerDropdown?.hidden) {
-    openPathPicker()
-  } else {
-    closePathPicker()
-  }
+const journeyPicker = createPicker({
+  trigger: document.querySelector('.journey-picker__trigger'),
+  dropdown: document.querySelector('.journey-picker__dropdown'),
+  label: document.querySelector('.journey-picker__label'),
+  dot: document.querySelector('.journey-picker__dot'),
+  idKey: 'journeyId',
+  slugKey: 'journeySlug',
+  buildOption: (item, isSelected) => buildJourneyOption(item, isSelected),
+  onSelect: (id) => {
+    selectedJourneyId = id
+    selectedMilestoneId = null
+    milestonePicker.selectedId = null
+    populateMilestonePicker()
+  },
+  getDisplayName: (id) => journeys.find((j) => j.id === id)?.name ?? 'Journey',
+  getDisplaySlug: (id) => journeys.find((j) => j.id === id)?.slug ?? '',
 })
 
-pathPickerOptions?.addEventListener('click', (event) => {
+const pathPicker = createPicker({
+  trigger: document.querySelector('.path-picker__trigger'),
+  dropdown: document.querySelector('.path-picker__dropdown'),
+  optionsContainer: document.querySelector('.path-picker__options'),
+  label: document.querySelector('.path-picker__label'),
+  idKey: 'pathId',
+  hasNoneOption: true,
+  buildOption: (item, isSelected) => buildSimpleOption(item, isSelected, 'path-picker', 'pathId'),
+  onSelect: (id) => {
+    selectedPathId = id
+  },
+  getDisplayName: (id) => paths.find((p) => p.id === id)?.name ?? 'Path',
+})
+
+const milestonePicker = createPicker({
+  trigger: document.querySelector('.milestone-picker__trigger'),
+  dropdown: document.querySelector('.milestone-picker__dropdown'),
+  optionsContainer: document.querySelector('.milestone-picker__options'),
+  label: document.querySelector('.milestone-picker__label'),
+  idKey: 'milestoneId',
+  hasNoneOption: true,
+  buildOption: (item, isSelected) => buildSimpleOption(item, isSelected, 'milestone-picker', 'milestoneId'),
+  onSelect: (id) => {
+    selectedMilestoneId = id
+  },
+  getDisplayName: (id) => milestones.find((m) => m.id === id)?.name ?? 'Milestone',
+})
+
+function populateJourneyPicker() {
+  journeyPicker.populate(journeys)
+  if (!journeyPicker.selectedId && journeys.length > 0) {
+    journeyPicker.select(journeys[0].id)
+    selectedJourneyId = journeys[0].id
+  }
+}
+
+function populatePathPicker() {
+  pathPicker.populate(paths)
+}
+
+function populateMilestonePicker() {
+  const filtered = milestones.filter((m) => m.journey_id === selectedJourneyId)
+  milestonePicker.populate(filtered)
+}
+
+function updateAuthDependentUI() {
+  if (pathPickerRoot) {
+    pathPickerRoot.classList.toggle('is-hidden', isAnonymousUser)
+  }
+  if (milestonePickerRoot) {
+    milestonePickerRoot.classList.toggle('is-hidden', isAnonymousUser)
+  }
+}
+
+// ─── Picker Events ───────────────────────────────────────────────────────────
+
+const allPickers = [journeyPicker, pathPicker, milestonePicker]
+
+function closeAllPickers() {
+  allPickers.forEach((p) => p.close())
+}
+
+function closeOtherPickers(current) {
+  allPickers.forEach((p) => { if (p !== current) p.close() })
+  closeAllItemJourneyPickers()
+}
+
+journeyPicker.trigger?.addEventListener('click', (event) => {
+  event.stopPropagation()
+  closeOtherPickers(journeyPicker)
+  journeyPicker.toggle()
+})
+
+journeyPicker.dropdown?.addEventListener('click', (event) => {
+  const option = event.target.closest('.journey-picker__option')
+  if (!option) return
+  journeyPicker.select(option.dataset.journeyId)
+  selectedJourneyId = journeyPicker.selectedId
+  journeyPicker.close()
+})
+
+pathPicker.trigger?.addEventListener('click', (event) => {
+  if (isAnonymousUser) return
+  event.stopPropagation()
+  closeOtherPickers(pathPicker)
+  pathPicker.toggle()
+})
+
+pathPicker.dropdown?.querySelector('.path-picker__options')?.addEventListener('click', (event) => {
   if (isAnonymousUser) return
   const option = event.target.closest('.path-picker__option')
   if (!option) return
-  selectPath(option.dataset.pathId)
-  closePathPicker()
+  pathPicker.select(option.dataset.pathId)
+  selectedPathId = pathPicker.selectedId
+  pathPicker.close()
 })
 
 pathPickerCreateInput?.addEventListener('keydown', async (event) => {
@@ -308,123 +281,26 @@ pathPickerCreateInput?.addEventListener('keydown', async (event) => {
   if (newPath) {
     paths.push(newPath)
     populatePathPicker()
-    selectPath(newPath.id)
-    closePathPicker()
+    pathPicker.select(newPath.id)
+    selectedPathId = pathPicker.selectedId
+    pathPicker.close()
   }
 })
 
-// ─── Milestone Picker (form) ─────────────────────────────────────────────────
-
-function populateMilestonePicker() {
-  if (!milestonePickerOptions) return
-  milestonePickerOptions.replaceChildren()
-
-  // Filter milestones by currently selected journey
-  const filtered = milestones.filter((m) => m.journey_id === selectedJourneyId)
-
-  for (const ms of filtered) {
-    const option = document.createElement('button')
-    option.type = 'button'
-    option.className = 'milestone-picker__option'
-    option.setAttribute('role', 'option')
-    option.dataset.milestoneId = ms.id
-    option.setAttribute('aria-selected', String(ms.id === selectedMilestoneId))
-
-    const label = document.createElement('span')
-    label.className = 'milestone-picker__option-label'
-    label.textContent = ms.name
-
-    const checkIcon = document.createElement('i')
-    checkIcon.dataset.lucide = 'check'
-    checkIcon.className = 'milestone-picker__option-check'
-
-    option.append(label, checkIcon)
-    milestonePickerOptions.append(option)
-  }
-
-  // "None" option
-  if (filtered.length > 0) {
-    const none = document.createElement('button')
-    none.type = 'button'
-    none.className = 'milestone-picker__option milestone-picker__option--none'
-    none.setAttribute('role', 'option')
-    none.dataset.milestoneId = ''
-    none.setAttribute('aria-selected', String(!selectedMilestoneId))
-
-    const label = document.createElement('span')
-    label.className = 'milestone-picker__option-label'
-    label.textContent = 'None'
-    none.append(label)
-    milestonePickerOptions.prepend(none)
-  }
-
-  hydrateIcons()
-  updateMilestoneTriggerDisplay()
-}
-
-function selectMilestone(milestoneId) {
-  selectedMilestoneId = milestoneId || null
-  updateMilestoneTriggerDisplay()
-
-  if (!milestonePickerOptions) return
-  milestonePickerOptions.querySelectorAll('.milestone-picker__option').forEach((opt) => {
-    const optId = opt.dataset.milestoneId
-    opt.setAttribute('aria-selected', String(optId === (selectedMilestoneId ?? '')))
-  })
-}
-
-function updateMilestoneTriggerDisplay() {
-  const ms = milestones.find((m) => m.id === selectedMilestoneId)
-  if (milestonePickerLabel) milestonePickerLabel.textContent = ms?.name ?? 'Milestone'
-  if (milestonePickerTrigger) {
-    milestonePickerTrigger.classList.toggle('is-selected', !!ms)
-  }
-}
-
-function updateAuthDependentUI() {
-  if (pathPickerRoot) {
-    pathPickerRoot.classList.toggle('is-hidden', isAnonymousUser)
-  }
-  if (milestonePickerRoot) {
-    milestonePickerRoot.classList.toggle('is-hidden', isAnonymousUser)
-  }
-}
-
-function openMilestonePicker() {
-  if (!milestonePickerDropdown || !milestonePickerTrigger) return
-  milestonePickerDropdown.hidden = false
-  milestonePickerTrigger.setAttribute('aria-expanded', 'true')
-  milestonePickerTrigger.classList.add('is-open')
-}
-
-function closeMilestonePicker() {
-  if (!milestonePickerDropdown || !milestonePickerTrigger) return
-  milestonePickerDropdown.hidden = true
-  milestonePickerTrigger.setAttribute('aria-expanded', 'false')
-  milestonePickerTrigger.classList.remove('is-open')
-}
-
-// ─── Milestone Picker Events ─────────────────────────────────────────────────
-
-milestonePickerTrigger?.addEventListener('click', (event) => {
+milestonePicker.trigger?.addEventListener('click', (event) => {
   if (isAnonymousUser) return
   event.stopPropagation()
-  closeJourneyPicker()
-  closePathPicker()
-  closeAllItemJourneyPickers()
-  if (milestonePickerDropdown?.hidden) {
-    openMilestonePicker()
-  } else {
-    closeMilestonePicker()
-  }
+  closeOtherPickers(milestonePicker)
+  milestonePicker.toggle()
 })
 
-milestonePickerOptions?.addEventListener('click', (event) => {
+milestonePicker.dropdown?.querySelector('.milestone-picker__options')?.addEventListener('click', (event) => {
   if (isAnonymousUser) return
   const option = event.target.closest('.milestone-picker__option')
   if (!option) return
-  selectMilestone(option.dataset.milestoneId)
-  closeMilestonePicker()
+  milestonePicker.select(option.dataset.milestoneId)
+  selectedMilestoneId = milestonePicker.selectedId
+  milestonePicker.close()
 })
 
 milestonePickerCreateInput?.addEventListener('keydown', async (event) => {
@@ -441,8 +317,9 @@ milestonePickerCreateInput?.addEventListener('keydown', async (event) => {
   if (newMs) {
     milestones.push(newMs)
     populateMilestonePicker()
-    selectMilestone(newMs.id)
-    closeMilestonePicker()
+    milestonePicker.select(newMs.id)
+    selectedMilestoneId = milestonePicker.selectedId
+    milestonePicker.close()
   }
 })
 
@@ -458,48 +335,12 @@ function closeAllItemJourneyPickers() {
   })
 }
 
-// ─── Journey Picker Events ────────────────────────────────────────────────────
-
-journeyPickerTrigger?.addEventListener('click', (event) => {
-  event.stopPropagation()
-  closeAllItemJourneyPickers()
-  closePathPicker()
-  closeMilestonePicker()
-  if (journeyPickerDropdown?.hidden) {
-    openJourneyPicker()
-  } else {
-    closeJourneyPicker()
-  }
-})
-
-journeyPickerDropdown?.addEventListener('click', (event) => {
-  const option = event.target.closest('.journey-picker__option')
-  if (!option) return
-  selectJourney(option.dataset.journeyId)
-  closeJourneyPicker()
-})
-
 // Close pickers when clicking outside
 document.addEventListener('click', (event) => {
-  // Close form journey picker
-  if (journeyPickerDropdown && !journeyPickerDropdown.hidden) {
-    const picker = journeyPickerTrigger?.closest('.journey-picker')
-    if (picker && !picker.contains(event.target)) {
-      closeJourneyPicker()
-    }
-  }
-  // Close form path picker
-  if (pathPickerDropdown && !pathPickerDropdown.hidden) {
-    const picker = pathPickerTrigger?.closest('.path-picker')
-    if (picker && !picker.contains(event.target)) {
-      closePathPicker()
-    }
-  }
-  // Close form milestone picker
-  if (milestonePickerDropdown && !milestonePickerDropdown.hidden) {
-    const picker = milestonePickerTrigger?.closest('.milestone-picker')
-    if (picker && !picker.contains(event.target)) {
-      closeMilestonePicker()
+  for (const p of allPickers) {
+    if (p.isOpen()) {
+      const root = p.trigger?.closest('.journey-picker, .path-picker, .milestone-picker')
+      if (root && !root.contains(event.target)) p.close()
     }
   }
   // Close any item journey pickers not containing the click target
@@ -515,17 +356,11 @@ document.addEventListener('click', (event) => {
 // Close pickers on Escape
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
-  if (journeyPickerDropdown && !journeyPickerDropdown.hidden) {
-    closeJourneyPicker()
-    journeyPickerTrigger?.focus()
-  }
-  if (pathPickerDropdown && !pathPickerDropdown.hidden) {
-    closePathPicker()
-    pathPickerTrigger?.focus()
-  }
-  if (milestonePickerDropdown && !milestonePickerDropdown.hidden) {
-    closeMilestonePicker()
-    milestonePickerTrigger?.focus()
+  for (const p of allPickers) {
+    if (p.isOpen()) {
+      p.close()
+      p.trigger?.focus()
+    }
   }
   closeAllItemJourneyPickers()
 })
@@ -620,6 +455,157 @@ function groupStepsByJourney(stepsList) {
   return sorted
 }
 
+// ─── Render Helpers ──────────────────────────────────────────────────────────
+
+function buildGroupHeader(journey, stepCount) {
+  const header = document.createElement('div')
+  header.className = 'journey-group__header'
+  header.dataset.groupSlug = journey?.slug ?? '_none'
+  if (journey?.slug) header.dataset.journeySlug = journey.slug
+
+  const dot = document.createElement('span')
+  dot.className = 'journey-group__dot'
+  dot.setAttribute('aria-hidden', 'true')
+  if (journey?.slug) dot.dataset.journeySlug = journey.slug
+
+  const name = document.createElement('span')
+  name.className = 'journey-group__name'
+  name.textContent = journey?.name ?? 'Uncategorized'
+
+  const count = document.createElement('span')
+  count.className = 'journey-group__count'
+  count.textContent = stepCount
+
+  header.append(dot, name, count)
+  return header
+}
+
+function buildStepElement(step, journey, isNew) {
+  const item = document.createElement('article')
+  item.className = 'todo-item'
+  if (step.completed) item.classList.add('is-completed')
+  if (journey?.slug) item.dataset.journeySlug = journey.slug
+  item.dataset.stepId = step.id
+
+  if (isNew) {
+    item.classList.add('is-new')
+    renderedIds.add(step.id)
+  }
+
+  const tileDot = document.createElement('span')
+  tileDot.className = 'todo-item__dot'
+  tileDot.setAttribute('aria-hidden', 'true')
+  if (journey?.slug) tileDot.dataset.journeySlug = journey.slug
+
+  const text = document.createElement('p')
+  text.className = 'todo-item__text'
+  text.textContent = step.text
+
+  const timestamp = document.createElement('time')
+  timestamp.className = 'todo-item__timestamp'
+  timestamp.textContent = formatStepTime(step.created_at)
+  if (step.created_at) timestamp.setAttribute('datetime', step.created_at)
+
+  const stepPaths = stepPathsMap.get(step.id)
+  let pathBadgesEl = null
+  if (stepPaths && stepPaths.length > 0) {
+    pathBadgesEl = document.createElement('div')
+    pathBadgesEl.className = 'todo-item__paths'
+    for (const p of stepPaths) {
+      const badge = document.createElement('span')
+      badge.className = 'todo-item__path-badge'
+      badge.textContent = p.name
+      pathBadgesEl.append(badge)
+    }
+  }
+
+  const actions = document.createElement('div')
+  actions.className = 'todo-item__actions'
+
+  const itemPicker = buildItemJourneyPicker(step)
+
+  const deleteButton = document.createElement('button')
+  deleteButton.className = 'todo-item__delete-button'
+  deleteButton.type = 'button'
+  deleteButton.dataset.todoId = step.id
+  deleteButton.setAttribute('aria-label', `Delete "${step.text}"`)
+
+  const icon = document.createElement('i')
+  icon.dataset.lucide = 'x'
+  deleteButton.append(icon)
+
+  actions.append(itemPicker, deleteButton)
+  item.append(tileDot, text, timestamp, actions)
+
+  const breadcrumb = buildBreadcrumb(step, { journeys, paths, milestones, stepPathsMap })
+  if (breadcrumb) item.append(breadcrumb)
+
+  const hasPaths = pathBadgesEl != null
+  const milestone = step.milestones
+  const hasMilestone = milestone && milestone.target_count
+
+  if (hasPaths || hasMilestone) {
+    const metaRow = document.createElement('div')
+    metaRow.className = 'todo-item__meta'
+
+    if (pathBadgesEl) metaRow.append(pathBadgesEl)
+
+    if (hasMilestone) {
+      const stepsInMilestone = steps.filter((s) => s.milestone_id === milestone.id)
+      const progress = calculateProgress(milestone, stepsInMilestone)
+
+      const milestoneEl = document.createElement('div')
+      milestoneEl.className = 'todo-item__milestone'
+
+      const msName = document.createElement('span')
+      msName.className = 'todo-item__milestone-name'
+      msName.textContent = milestone.name
+
+      const bar = document.createElement('div')
+      bar.className = 'milestone-bar'
+      if (journey?.slug) bar.dataset.journeySlug = journey.slug
+
+      const fill = document.createElement('div')
+      fill.className = 'milestone-bar__fill'
+      fill.style.width = `${(progress.percentage ?? 0) * 100}%`
+
+      bar.append(fill)
+      milestoneEl.append(msName, bar)
+      metaRow.append(milestoneEl)
+    }
+
+    item.append(metaRow)
+  }
+
+  return item
+}
+
+function updateGroupCount(slug) {
+  const header = itemsContainer.querySelector(`.journey-group__header[data-group-slug="${slug}"]`)
+  if (!header) return
+  const count = itemsContainer.querySelectorAll(`.todo-item[data-journey-slug="${slug}"]`).length
+  const countEl = header.querySelector('.journey-group__count')
+  if (countEl) countEl.textContent = count
+}
+
+function findGroupInsertionPoint(slug) {
+  // Find the correct position among existing group headers, based on journey sort order
+  const targetOrder = journeys.findIndex((j) => j.slug === slug)
+  const headers = itemsContainer.querySelectorAll('.journey-group__header')
+  for (const header of headers) {
+    const headerSlug = header.dataset.groupSlug
+    const headerOrder = journeys.findIndex((j) => j.slug === headerSlug)
+    if (headerOrder > targetOrder) return header
+  }
+  return null // append at end
+}
+
+function getGroupLastElement(slug) {
+  // Get the last step element in a journey group (to append after it)
+  const stepsInGroup = itemsContainer.querySelectorAll(`.todo-item[data-journey-slug="${slug}"]`)
+  return stepsInGroup.length > 0 ? stepsInGroup[stepsInGroup.length - 1] : null
+}
+
 // ─── Render ─────────────────────────────────────────────────────────────────
 
 function renderSteps() {
@@ -638,133 +624,11 @@ function renderSteps() {
 
   for (const group of groups) {
     const journey = group.journey
+    itemsContainer.append(buildGroupHeader(journey, group.steps.length))
 
-    // Journey group header
-    const header = document.createElement('div')
-    header.className = 'journey-group__header'
-    if (journey?.slug) header.dataset.journeySlug = journey.slug
-
-    const dot = document.createElement('span')
-    dot.className = 'journey-group__dot'
-    dot.setAttribute('aria-hidden', 'true')
-    if (journey?.slug) dot.dataset.journeySlug = journey.slug
-
-    const name = document.createElement('span')
-    name.className = 'journey-group__name'
-    name.textContent = journey?.name ?? 'Uncategorized'
-
-    const count = document.createElement('span')
-    count.className = 'journey-group__count'
-    count.textContent = group.steps.length
-
-    header.append(dot, name, count)
-    itemsContainer.append(header)
-
-    // Steps within group
     for (const step of group.steps) {
-      const item = document.createElement('article')
-      item.className = 'todo-item'
-      if (step.completed) item.classList.add('is-completed')
-      if (journey?.slug) item.dataset.journeySlug = journey.slug
-      item.dataset.stepId = step.id
-
       const isNew = !renderedIds.has(step.id)
-      if (isNew) {
-        item.classList.add('is-new')
-        renderedIds.add(step.id)
-      }
-
-      // Layer 1: Journey dot + title + timestamp
-      const tileDot = document.createElement('span')
-      tileDot.className = 'todo-item__dot'
-      tileDot.setAttribute('aria-hidden', 'true')
-      if (journey?.slug) tileDot.dataset.journeySlug = journey.slug
-
-      const text = document.createElement('p')
-      text.className = 'todo-item__text'
-      text.textContent = step.text
-
-      const timestamp = document.createElement('time')
-      timestamp.className = 'todo-item__timestamp'
-      timestamp.textContent = formatStepTime(step.created_at)
-      if (step.created_at) timestamp.setAttribute('datetime', step.created_at)
-
-      // Path badges (only shown if step has path associations)
-      const stepPaths = stepPathsMap.get(step.id)
-      let pathBadgesEl = null
-      if (stepPaths && stepPaths.length > 0) {
-        pathBadgesEl = document.createElement('div')
-        pathBadgesEl.className = 'todo-item__paths'
-        for (const p of stepPaths) {
-          const badge = document.createElement('span')
-          badge.className = 'todo-item__path-badge'
-          badge.textContent = p.name
-          pathBadgesEl.append(badge)
-        }
-      }
-
-      const actions = document.createElement('div')
-      actions.className = 'todo-item__actions'
-
-      const itemPicker = buildItemJourneyPicker(step)
-
-      const deleteButton = document.createElement('button')
-      deleteButton.className = 'todo-item__delete-button'
-      deleteButton.type = 'button'
-      deleteButton.dataset.todoId = step.id
-      deleteButton.setAttribute('aria-label', `Delete "${step.text}"`)
-
-      const icon = document.createElement('i')
-      icon.dataset.lucide = 'x'
-      deleteButton.append(icon)
-
-      actions.append(itemPicker, deleteButton)
-      item.append(tileDot, text, timestamp, actions)
-
-      // Breadcrumb: Journey › Path › Milestone (only if 2+ segments)
-      const breadcrumb = buildBreadcrumb(step, { journeys, paths, milestones, stepPathsMap })
-      if (breadcrumb) item.append(breadcrumb)
-
-      // Metadata row: path badges + milestone progress (below main content)
-      const hasPaths = pathBadgesEl != null
-      const milestone = step.milestones
-      const hasMilestone = milestone && milestone.target_count
-
-      if (hasPaths || hasMilestone) {
-        const metaRow = document.createElement('div')
-        metaRow.className = 'todo-item__meta'
-
-        if (pathBadgesEl) metaRow.append(pathBadgesEl)
-
-        if (hasMilestone) {
-          // Count completed steps toward this milestone
-          const stepsInMilestone = steps.filter((s) => s.milestone_id === milestone.id)
-          const progress = calculateProgress(milestone, stepsInMilestone)
-
-          const milestoneEl = document.createElement('div')
-          milestoneEl.className = 'todo-item__milestone'
-
-          const msName = document.createElement('span')
-          msName.className = 'todo-item__milestone-name'
-          msName.textContent = milestone.name
-
-          const bar = document.createElement('div')
-          bar.className = 'milestone-bar'
-          if (journey?.slug) bar.dataset.journeySlug = journey.slug
-
-          const fill = document.createElement('div')
-          fill.className = 'milestone-bar__fill'
-          fill.style.width = `${(progress.percentage ?? 0) * 100}%`
-
-          bar.append(fill)
-          milestoneEl.append(msName, bar)
-          metaRow.append(milestoneEl)
-        }
-
-        item.append(metaRow)
-      }
-
-      itemsContainer.append(item)
+      itemsContainer.append(buildStepElement(step, journey, isNew))
     }
   }
 
@@ -872,63 +736,11 @@ async function addStep(text, journeyId) {
   const insertPayload = { text, completed: false, journey_id: journeyId, user_id: currentUserId }
   if (selectedMilestoneId) insertPayload.milestone_id = selectedMilestoneId
 
-  // #region agent log
-  fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': '9f04a6',
-    },
-    body: JSON.stringify({
-      sessionId: '9f04a6',
-      runId: 'initial',
-      hypothesisId: 'H1-H3',
-      location: 'main.js:821',
-      message: 'addStep called',
-      data: {
-        textLength: typeof text === 'string' ? text.length : null,
-        hasText: !!text,
-        journeyId,
-        currentUserId,
-        selectedMilestoneId,
-        selectedPathId,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion
-
   const { data, error } = await supabase
     .from('steps')
     .insert(insertPayload)
     .select('*, journeys(id, name, slug), milestones(id, name, target_count)')
     .single()
-
-  // #region agent log
-  fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': '9f04a6',
-    },
-    body: JSON.stringify({
-      sessionId: '9f04a6',
-      runId: 'initial',
-      hypothesisId: 'H1-H3',
-      location: 'main.js:829',
-      message: 'addStep insert result',
-      data: {
-        hasError: !!error,
-        errorMessage: error?.message ?? null,
-        errorCode: error?.code ?? null,
-        stepId: data?.id ?? null,
-        journeyId: data?.journey_id ?? null,
-        milestoneId: data?.milestone_id ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion
 
   if (error) {
     console.error('Failed to add step:', error.message)
@@ -939,28 +751,6 @@ async function addStep(text, journeyId) {
     // Associate with selected path if any, but never block rendering the new step
     if (selectedPathId) {
       const ok = await addStepToPath(data.id, selectedPathId)
-      // #region agent log
-      fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Debug-Session-Id': '9f04a6',
-        },
-        body: JSON.stringify({
-          sessionId: '9f04a6',
-          runId: 'initial',
-          hypothesisId: 'H4',
-          location: 'main.js:843',
-          message: 'addStepToPath result',
-          data: {
-            ok,
-            stepId: data.id,
-            selectedPathId,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
       if (ok) {
         const path = paths.find((p) => p.id === selectedPathId)
         if (path) {
@@ -970,30 +760,39 @@ async function addStep(text, journeyId) {
     }
   } catch (assocError) {
     console.error('Failed to associate step with path:', assocError)
-    // #region agent log
-    fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '9f04a6',
-      },
-      body: JSON.stringify({
-        sessionId: '9f04a6',
-        runId: 'initial',
-        hypothesisId: 'H4',
-        location: 'main.js:851',
-        message: 'addStepToPath threw',
-        data: {
-          errorMessage: assocError?.message ?? String(assocError),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-    // #endregion
   }
 
   steps.push(data)
-  renderSteps()
+
+  // Incremental DOM insert instead of full re-render
+  const journey = data.journeys
+  const slug = journey?.slug ?? '_none'
+
+  // Remove empty-state message if present
+  const emptyEl = itemsContainer.querySelector('.todo-empty')
+  if (emptyEl) emptyEl.remove()
+
+  // Create group header if this journey group doesn't exist yet
+  let groupHeader = itemsContainer.querySelector(`.journey-group__header[data-group-slug="${slug}"]`)
+  if (!groupHeader) {
+    groupHeader = buildGroupHeader(journey, 0)
+    const insertBefore = findGroupInsertionPoint(slug)
+    itemsContainer.insertBefore(groupHeader, insertBefore)
+  }
+
+  // Insert the new step after the last step in its group (or after the header)
+  const lastInGroup = getGroupLastElement(slug)
+  const stepEl = buildStepElement(data, journey, true)
+  if (lastInGroup) {
+    lastInGroup.after(stepEl)
+  } else {
+    groupHeader.after(stepEl)
+  }
+
+  updateGroupCount(slug)
+  hydrateIcons()
+  updateProgress()
+  refreshWeekView()
 }
 
 async function toggleStep(id, completed) {
@@ -1006,13 +805,15 @@ async function toggleStep(id, completed) {
     console.error('Failed to update step:', error.message)
     const step = steps.find((s) => s.id === id)
     if (step) step.completed = !completed
-    renderSteps()
+    // Revert the DOM toggle
+    const itemEl = itemsContainer.querySelector(`.todo-item[data-step-id="${id}"]`)
+    if (itemEl) itemEl.classList.toggle('is-completed', !completed)
     return
   }
 
   const step = steps.find((s) => s.id === id)
   if (step) step.completed = completed
-  renderSteps()
+  // DOM already toggled optimistically in the click handler
 }
 
 async function deleteStep(id, itemEl, deleteButton) {
@@ -1027,20 +828,45 @@ async function deleteStep(id, itemEl, deleteButton) {
   }
 
   renderedIds.delete(id)
+  const slug = itemEl?.dataset.journeySlug ?? '_none'
+
+  const removeFromDom = () => {
+    steps = steps.filter((s) => s.id !== id)
+    if (itemEl) itemEl.remove()
+
+    // If the group is now empty, remove its header too
+    const remaining = itemsContainer.querySelectorAll(`.todo-item[data-journey-slug="${slug}"]`)
+    if (remaining.length === 0) {
+      const header = itemsContainer.querySelector(`.journey-group__header[data-group-slug="${slug}"]`)
+      if (header) header.remove()
+    } else {
+      updateGroupCount(slug)
+    }
+
+    // Show empty state if no steps left
+    if (steps.length === 0) {
+      const empty = document.createElement('p')
+      empty.className = 'todo-empty'
+      empty.textContent = 'Every journey starts with a single step.'
+      itemsContainer.append(empty)
+    }
+
+    updateProgress()
+    refreshWeekView()
+  }
 
   if (itemEl) {
     itemEl.classList.add('is-removing')
-    setTimeout(() => {
-      steps = steps.filter((s) => s.id !== id)
-      renderSteps()
-    }, 210)
+    setTimeout(removeFromDom, 210)
   } else {
-    steps = steps.filter((s) => s.id !== id)
-    renderSteps()
+    removeFromDom()
   }
 }
 
 async function updateStepJourney(id, journeyId) {
+  const oldStep = steps.find((s) => s.id === id)
+  const oldSlug = oldStep?.journeys?.slug ?? '_none'
+
   const { data, error } = await supabase
     .from('steps')
     .update({ journey_id: journeyId })
@@ -1055,7 +881,44 @@ async function updateStepJourney(id, journeyId) {
 
   const idx = steps.findIndex((s) => s.id === id)
   if (idx !== -1) steps[idx] = data
-  renderSteps()
+
+  // Move DOM element to new group
+  const newJourney = data.journeys
+  const newSlug = newJourney?.slug ?? '_none'
+
+  // Remove old element
+  const oldEl = itemsContainer.querySelector(`.todo-item[data-step-id="${id}"]`)
+  if (oldEl) oldEl.remove()
+
+  // Clean up old group if empty
+  const oldRemaining = itemsContainer.querySelectorAll(`.todo-item[data-journey-slug="${oldSlug}"]`)
+  if (oldRemaining.length === 0) {
+    const oldHeader = itemsContainer.querySelector(`.journey-group__header[data-group-slug="${oldSlug}"]`)
+    if (oldHeader) oldHeader.remove()
+  } else {
+    updateGroupCount(oldSlug)
+  }
+
+  // Ensure new group exists
+  let newHeader = itemsContainer.querySelector(`.journey-group__header[data-group-slug="${newSlug}"]`)
+  if (!newHeader) {
+    newHeader = buildGroupHeader(newJourney, 0)
+    const insertBefore = findGroupInsertionPoint(newSlug)
+    itemsContainer.insertBefore(newHeader, insertBefore)
+  }
+
+  // Insert rebuilt step element
+  const lastInGroup = getGroupLastElement(newSlug)
+  const stepEl = buildStepElement(data, newJourney, false)
+  if (lastInGroup) {
+    lastInGroup.after(stepEl)
+  } else {
+    newHeader.after(stepEl)
+  }
+
+  updateGroupCount(newSlug)
+  hydrateIcons()
+  refreshWeekView()
 }
 
 // ─── Auth UI ─────────────────────────────────────────────────────────────────
@@ -1246,7 +1109,7 @@ itemsContainer.addEventListener('click', (event) => {
   const itemTrigger = target.closest('.journey-picker__item-trigger')
   if (itemTrigger instanceof HTMLButtonElement) {
     event.stopPropagation()
-    closeJourneyPicker()
+    journeyPicker.close()
     const picker = itemTrigger.closest('.journey-picker')
     const dropdown = picker?.querySelector('.journey-picker__dropdown')
     if (!dropdown) return
@@ -1300,7 +1163,8 @@ itemsContainer.addEventListener('click', (event) => {
   if (!step) return
 
   step.completed = !step.completed
-  renderSteps()
+  // Optimistic DOM update — toggleStep handles revert on error
+  tile.classList.toggle('is-completed', step.completed)
   toggleStep(id, step.completed)
 })
 
@@ -1336,10 +1200,8 @@ async function init() {
     updateHeaderForUser(data.session.user)
   }
 
-  // Load journeys, paths, and milestones after auth so RLS filters by the authenticated user
-  await loadJourneys()
-  await loadAllPaths()
-  await loadAllMilestones()
+  // Load journeys, paths, and milestones in parallel (independent queries)
+  await Promise.all([loadJourneys(), loadAllPaths(), loadAllMilestones()])
 
   // If we already had a session (no onAuthStateChange fired), load steps now
   if (data.session) {
