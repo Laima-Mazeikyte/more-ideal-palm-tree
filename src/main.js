@@ -27,12 +27,14 @@ const journeyPickerDropdown = document.querySelector('.journey-picker__dropdown'
 const journeyPickerLabel = document.querySelector('.journey-picker__label')
 const journeyPickerDot = document.querySelector('.journey-picker__dot')
 
+const pathPickerRoot = document.querySelector('.path-picker')
 const pathPickerTrigger = document.querySelector('.path-picker__trigger')
 const pathPickerDropdown = document.querySelector('.path-picker__dropdown')
 const pathPickerOptions = document.querySelector('.path-picker__options')
 const pathPickerLabel = document.querySelector('.path-picker__label')
 const pathPickerCreateInput = document.querySelector('.path-picker__create-input')
 
+const milestonePickerRoot = document.querySelector('.milestone-picker')
 const milestonePickerTrigger = document.querySelector('.milestone-picker__trigger')
 const milestonePickerDropdown = document.querySelector('.milestone-picker__dropdown')
 const milestonePickerOptions = document.querySelector('.milestone-picker__options')
@@ -80,6 +82,7 @@ let selectedJourneyId = null
 let selectedPathId = null
 let selectedMilestoneId = null
 let currentUserId = null
+let isAnonymousUser = true
 const renderedIds = new Set()
 let authMode = 'signup' // 'signup' | 'signin'
 
@@ -267,6 +270,7 @@ function closePathPicker() {
 // ─── Path Picker Events ──────────────────────────────────────────────────────
 
 pathPickerTrigger?.addEventListener('click', (event) => {
+  if (isAnonymousUser) return
   event.stopPropagation()
   closeJourneyPicker()
   closeMilestonePicker()
@@ -279,6 +283,7 @@ pathPickerTrigger?.addEventListener('click', (event) => {
 })
 
 pathPickerOptions?.addEventListener('click', (event) => {
+  if (isAnonymousUser) return
   const option = event.target.closest('.path-picker__option')
   if (!option) return
   selectPath(option.dataset.pathId)
@@ -289,7 +294,7 @@ pathPickerCreateInput?.addEventListener('keydown', async (event) => {
   if (event.key !== 'Enter') return
   event.preventDefault()
   const name = pathPickerCreateInput.value.trim()
-  if (!name || !currentUserId) return
+  if (!name || !currentUserId || isAnonymousUser) return
 
   pathPickerCreateInput.disabled = true
   const newPath = await createPath(name, currentUserId)
@@ -372,6 +377,15 @@ function updateMilestoneTriggerDisplay() {
   }
 }
 
+function updateAuthDependentUI() {
+  if (pathPickerRoot) {
+    pathPickerRoot.classList.toggle('is-hidden', isAnonymousUser)
+  }
+  if (milestonePickerRoot) {
+    milestonePickerRoot.classList.toggle('is-hidden', isAnonymousUser)
+  }
+}
+
 function openMilestonePicker() {
   if (!milestonePickerDropdown || !milestonePickerTrigger) return
   milestonePickerDropdown.hidden = false
@@ -389,6 +403,7 @@ function closeMilestonePicker() {
 // ─── Milestone Picker Events ─────────────────────────────────────────────────
 
 milestonePickerTrigger?.addEventListener('click', (event) => {
+  if (isAnonymousUser) return
   event.stopPropagation()
   closeJourneyPicker()
   closePathPicker()
@@ -401,6 +416,7 @@ milestonePickerTrigger?.addEventListener('click', (event) => {
 })
 
 milestonePickerOptions?.addEventListener('click', (event) => {
+  if (isAnonymousUser) return
   const option = event.target.closest('.milestone-picker__option')
   if (!option) return
   selectMilestone(option.dataset.milestoneId)
@@ -411,7 +427,7 @@ milestonePickerCreateInput?.addEventListener('keydown', async (event) => {
   if (event.key !== 'Enter') return
   event.preventDefault()
   const name = milestonePickerCreateInput.value.trim()
-  if (!name || !currentUserId || !selectedJourneyId) return
+  if (!name || !currentUserId || !selectedJourneyId || isAnonymousUser) return
 
   milestonePickerCreateInput.disabled = true
   const newMs = await createMilestone(selectedJourneyId, name, currentUserId)
@@ -803,14 +819,70 @@ async function loadSteps() {
 }
 
 async function addStep(text, journeyId) {
+  if (!currentUserId) {
+    console.warn('Cannot add step without an authenticated session.')
+    return
+  }
   const insertPayload = { text, completed: false, journey_id: journeyId, user_id: currentUserId }
   if (selectedMilestoneId) insertPayload.milestone_id = selectedMilestoneId
+
+  // #region agent log
+  fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': '9f04a6',
+    },
+    body: JSON.stringify({
+      sessionId: '9f04a6',
+      runId: 'initial',
+      hypothesisId: 'H1-H3',
+      location: 'main.js:821',
+      message: 'addStep called',
+      data: {
+        textLength: typeof text === 'string' ? text.length : null,
+        hasText: !!text,
+        journeyId,
+        currentUserId,
+        selectedMilestoneId,
+        selectedPathId,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {})
+  // #endregion
 
   const { data, error } = await supabase
     .from('steps')
     .insert(insertPayload)
     .select('*, journeys(id, name, slug), milestones(id, name, target_count)')
     .single()
+
+  // #region agent log
+  fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': '9f04a6',
+    },
+    body: JSON.stringify({
+      sessionId: '9f04a6',
+      runId: 'initial',
+      hypothesisId: 'H1-H3',
+      location: 'main.js:829',
+      message: 'addStep insert result',
+      data: {
+        hasError: !!error,
+        errorMessage: error?.message ?? null,
+        errorCode: error?.code ?? null,
+        stepId: data?.id ?? null,
+        journeyId: data?.journey_id ?? null,
+        milestoneId: data?.milestone_id ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {})
+  // #endregion
 
   if (error) {
     console.error('Failed to add step:', error.message)
@@ -821,6 +893,28 @@ async function addStep(text, journeyId) {
     // Associate with selected path if any, but never block rendering the new step
     if (selectedPathId) {
       const ok = await addStepToPath(data.id, selectedPathId)
+      // #region agent log
+      fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '9f04a6',
+        },
+        body: JSON.stringify({
+          sessionId: '9f04a6',
+          runId: 'initial',
+          hypothesisId: 'H4',
+          location: 'main.js:843',
+          message: 'addStepToPath result',
+          data: {
+            ok,
+            stepId: data.id,
+            selectedPathId,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
       if (ok) {
         const path = paths.find((p) => p.id === selectedPathId)
         if (path) {
@@ -830,6 +924,26 @@ async function addStep(text, journeyId) {
     }
   } catch (assocError) {
     console.error('Failed to associate step with path:', assocError)
+    // #region agent log
+    fetch('http://127.0.0.1:7751/ingest/dadd5b2c-2a27-4e1b-97eb-f234832b59d2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '9f04a6',
+      },
+      body: JSON.stringify({
+        sessionId: '9f04a6',
+        runId: 'initial',
+        hypothesisId: 'H4',
+        location: 'main.js:851',
+        message: 'addStepToPath threw',
+        data: {
+          errorMessage: assocError?.message ?? String(assocError),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
   }
 
   steps.push(data)
@@ -931,6 +1045,7 @@ function clearAuthError() {
 
 function updateHeaderForUser(user) {
   const isAnonymous = !user?.email
+  isAnonymousUser = isAnonymous
 
   if (accountButton) {
     accountButton.classList.toggle('is-signed-in', !isAnonymous)
@@ -1129,6 +1244,7 @@ hydrateIcons()
 onAuthStateChange((_event, session) => {
   currentUserId = session?.user?.id ?? null
   updateHeaderForUser(session?.user ?? null)
+  updateAuthDependentUI()
   steps = []
   paths = []
   milestones = []
@@ -1162,6 +1278,8 @@ async function init() {
   if (data.session) {
     loadSteps()
   }
+
+  updateAuthDependentUI()
 }
 
 init()

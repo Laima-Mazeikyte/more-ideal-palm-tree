@@ -1306,6 +1306,10 @@ button.todo-item__journey-badge[data-journey-slug="foundations"].is-open {
   height: 1.25rem;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 @media (max-width: 36rem) {
   #app {
     padding: var(--space-lg);
