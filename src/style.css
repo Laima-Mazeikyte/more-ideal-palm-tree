@@ -488,7 +488,7 @@ button:focus-visible {
 .todo-item {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-sm) var(--space-md);
   padding: var(--space-md) var(--space-sm);
@@ -497,7 +497,7 @@ button:focus-visible {
   border-bottom: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 40%, transparent 60%);
   border-radius: 0;
   background: transparent;
-  cursor: pointer;
+  cursor: default;
   transition:
     opacity var(--motion-fast) var(--motion-ease),
     background-color var(--motion-fast) var(--motion-ease),
@@ -613,6 +613,123 @@ button:focus-visible {
 
 .todo-item.is-expanded {
   background: color-mix(in oklab, var(--color-surface-subtle) 30%, transparent);
+}
+
+/* ─── Completion Indicator ("Soft Pebble") ──────────────────────────────── */
+
+.todo-item__indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  padding: 0;
+  border: 1.5px solid color-mix(in oklab, var(--color-text-muted) 25%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.todo-item__indicator svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.todo-item__indicator:hover {
+  background: color-mix(in oklab, var(--color-surface-subtle) 50%, transparent);
+  border-color: var(--color-text-muted);
+}
+
+.todo-item__indicator:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* Checked state — base (overridden by journey-specific rules below) */
+.todo-item__indicator[aria-checked="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+  animation: indicator-pulse 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.todo-item__indicator[aria-checked="true"] svg {
+  opacity: 1;
+}
+
+@keyframes indicator-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* Journey-colored indicator — unchecked border tint */
+.todo-item[data-journey-slug="vitality"] .todo-item__indicator    { border-color: color-mix(in oklab, var(--journey-vitality) 30%, transparent); }
+.todo-item[data-journey-slug="pursuits"] .todo-item__indicator    { border-color: color-mix(in oklab, var(--journey-pursuits) 30%, transparent); }
+.todo-item[data-journey-slug="prosperity"] .todo-item__indicator  { border-color: color-mix(in oklab, var(--journey-prosperity) 30%, transparent); }
+.todo-item[data-journey-slug="connections"] .todo-item__indicator { border-color: color-mix(in oklab, var(--journey-connections) 30%, transparent); }
+.todo-item[data-journey-slug="foundations"] .todo-item__indicator { border-color: color-mix(in oklab, var(--journey-foundations) 30%, transparent); }
+
+/* Journey-colored indicator — unchecked hover (soft fill) */
+.todo-item[data-journey-slug="vitality"] .todo-item__indicator:hover    { background: var(--journey-vitality-soft); border-color: color-mix(in oklab, var(--journey-vitality) 50%, transparent); }
+.todo-item[data-journey-slug="pursuits"] .todo-item__indicator:hover    { background: var(--journey-pursuits-soft); border-color: color-mix(in oklab, var(--journey-pursuits) 50%, transparent); }
+.todo-item[data-journey-slug="prosperity"] .todo-item__indicator:hover  { background: var(--journey-prosperity-soft); border-color: color-mix(in oklab, var(--journey-prosperity) 50%, transparent); }
+.todo-item[data-journey-slug="connections"] .todo-item__indicator:hover { background: var(--journey-connections-soft); border-color: color-mix(in oklab, var(--journey-connections) 50%, transparent); }
+.todo-item[data-journey-slug="foundations"] .todo-item__indicator:hover { background: var(--journey-foundations-soft); border-color: color-mix(in oklab, var(--journey-foundations) 50%, transparent); }
+
+/* Journey-colored indicator — checked fill */
+.todo-item[data-journey-slug="vitality"] .todo-item__indicator[aria-checked="true"]    { background: var(--journey-vitality);    border-color: var(--journey-vitality); }
+.todo-item[data-journey-slug="pursuits"] .todo-item__indicator[aria-checked="true"]    { background: var(--journey-pursuits);    border-color: var(--journey-pursuits); }
+.todo-item[data-journey-slug="prosperity"] .todo-item__indicator[aria-checked="true"]  { background: var(--journey-prosperity);  border-color: var(--journey-prosperity); }
+.todo-item[data-journey-slug="connections"] .todo-item__indicator[aria-checked="true"] { background: var(--journey-connections); border-color: var(--journey-connections); }
+.todo-item[data-journey-slug="foundations"] .todo-item__indicator[aria-checked="true"] { background: var(--journey-foundations); border-color: var(--journey-foundations); }
+
+/* Suppress indicator during edit mode */
+.todo-item.is-editing .todo-item__indicator {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ─── Inline Text Editing ──────────────────────────────────────────────── */
+
+.todo-item__text {
+  cursor: text;
+}
+
+.todo-item__edit-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1.5px solid color-mix(in oklab, var(--color-primary) 30%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: color-mix(in oklab, var(--color-text) 88%, var(--neutral-900) 12%);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-body);
+  font-weight: var(--font-weight-body);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.todo-item__edit-input:focus {
+  border-bottom-color: color-mix(in oklab, var(--color-primary) 55%, transparent);
+}
+
+.todo-item.is-editing .todo-item__text {
+  display: none;
 }
 
 /* ─── Expand Button ─────────────────────────────────────────────────────── */

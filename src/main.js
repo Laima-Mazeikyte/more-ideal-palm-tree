@@ -267,6 +267,17 @@ function buildStepElement(step, journey, isNew) {
     renderedIds.add(step.id)
   }
 
+  // Completion indicator
+  const indicator = document.createElement('button')
+  indicator.type = 'button'
+  indicator.className = 'todo-item__indicator'
+  indicator.setAttribute('role', 'switch')
+  indicator.setAttribute('aria-checked', String(!!step.completed))
+  indicator.setAttribute('aria-label', 'Mark complete')
+  const checkIcon = document.createElement('i')
+  checkIcon.dataset.lucide = 'check'
+  indicator.append(checkIcon)
+
   const content = document.createElement('div')
   content.className = 'todo-item__content'
 
@@ -319,7 +330,7 @@ function buildStepElement(step, journey, isNew) {
   deleteButton.append(icon)
 
   actions.append(deleteButton)
-  item.append(content, timestamp, actions)
+  item.append(indicator, content, timestamp, actions)
 
   // Detail view (hidden by default, for authenticated users)
   if (!isAnonymousUser) {
@@ -512,7 +523,11 @@ async function toggleStep(id, completed) {
     const step = steps.find((s) => s.id === id)
     if (step) step.completed = !completed
     const itemEl = itemsContainer.querySelector(`.todo-item[data-step-id="${id}"]`)
-    if (itemEl) itemEl.classList.toggle('is-completed', !completed)
+    if (itemEl) {
+      itemEl.classList.toggle('is-completed', !completed)
+      const ind = itemEl.querySelector('.todo-item__indicator')
+      if (ind) ind.setAttribute('aria-checked', String(!completed))
+    }
     return
   }
 
@@ -603,6 +618,89 @@ async function updateStepMilestone(stepId, milestoneId) {
     step.milestones = milestoneId ? milestones.find((m) => m.id === milestoneId) || null : null
     rebuildStepMeta(stepId)
   }
+}
+
+async function updateStepText(id, text) {
+  const { error } = await supabase
+    .from('steps')
+    .update({ text })
+    .eq('id', id)
+
+  if (error) {
+    console.error('Failed to update step text:', error.message)
+    return false
+  }
+
+  const step = steps.find((s) => s.id === id)
+  if (step) step.text = text
+  return true
+}
+
+function enterEditMode(tile, stepId) {
+  if (tile.classList.contains('is-editing')) return
+
+  const step = steps.find((s) => s.id === stepId)
+  if (!step) return
+
+  const textEl = tile.querySelector('.todo-item__text')
+  if (!textEl) return
+
+  tile.classList.add('is-editing')
+
+  const input = document.createElement('input')
+  input.type = 'text'
+  input.className = 'todo-item__edit-input'
+  input.value = step.text
+  input.setAttribute('aria-label', 'Edit step text')
+
+  const contentEl = tile.querySelector('.todo-item__content')
+  contentEl.insertBefore(input, textEl)
+  input.focus()
+  input.select()
+
+  let settled = false
+
+  const save = async () => {
+    if (settled) return
+    settled = true
+    const newText = input.value.trim()
+    if (newText && newText !== step.text) {
+      const ok = await updateStepText(stepId, newText)
+      if (ok) {
+        textEl.textContent = newText
+        const delBtn = tile.querySelector('.todo-item__delete-button')
+        if (delBtn) delBtn.setAttribute('aria-label', `Delete "${newText}"`)
+      }
+    }
+    exitEditMode(tile)
+  }
+
+  const cancel = () => {
+    if (settled) return
+    settled = true
+    exitEditMode(tile)
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      save()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      cancel()
+    }
+  })
+
+  input.addEventListener('blur', () => {
+    setTimeout(save, 0)
+  })
+}
+
+function exitEditMode(tile) {
+  tile.classList.remove('is-editing')
+  const input = tile.querySelector('.todo-item__edit-input')
+  if (input) input.remove()
 }
 
 // ─── Auth UI ─────────────────────────────────────────────────────────────────
@@ -837,21 +935,35 @@ itemsContainer.addEventListener('click', (event) => {
     return
   }
 
-  // Don't toggle completion if clicking inside detail view or actions
+  // Completion indicator toggle
+  const indicator = target.closest('.todo-item__indicator')
+  if (indicator instanceof HTMLButtonElement) {
+    const tile = indicator.closest('.todo-item')
+    if (!tile || tile.classList.contains('is-editing')) return
+    const id = tile.dataset.stepId
+    const step = steps.find((s) => s.id === id)
+    if (!step) return
+
+    step.completed = !step.completed
+    tile.classList.toggle('is-completed', step.completed)
+    indicator.setAttribute('aria-checked', String(step.completed))
+    toggleStep(id, step.completed)
+    return
+  }
+
+  // Text click → enter inline edit mode
+  const textEl = target.closest('.todo-item__text')
+  if (textEl) {
+    const tile = textEl.closest('.todo-item')
+    if (!tile) return
+    const stepId = tile.dataset.stepId
+    enterEditMode(tile, stepId)
+    return
+  }
+
+  // Ignore clicks inside detail view or actions
   if (target.closest('.step-detail')) return
   if (target.closest('.todo-item__actions')) return
-
-  // Toggle completion by clicking the tile body
-  const tile = target.closest('.todo-item')
-  if (!tile) return
-
-  const id = tile.dataset.stepId
-  const step = steps.find((s) => s.id === id)
-  if (!step) return
-
-  step.completed = !step.completed
-  tile.classList.toggle('is-completed', step.completed)
-  toggleStep(id, step.completed)
 })
 
 // Path add via inline input in detail view
