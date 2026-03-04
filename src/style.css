@@ -1160,7 +1160,7 @@ button:focus-visible {
   background: var(--color-primary-hover);
 }
 
-/* ─── Auth Dialog ────────────────────────────────────────────────────────── */
+/* ─── Dialog (shared chrome) ─────────────────────────────────────────────── */
 
 @keyframes dialog-rise {
   from {
@@ -1178,13 +1178,11 @@ button:focus-visible {
   to { opacity: 1; }
 }
 
-.auth-dialog {
+.dialog {
   margin: auto;
   width: min(26rem, calc(100vw - 2 * var(--space-xl)));
   padding: calc(var(--space-xl) * 1.5);
-  background:
-    radial-gradient(110% 65% at 0% 0%, color-mix(in oklab, var(--brand-100) 22%, transparent), transparent 55%),
-    var(--neutral-0);
+  background: var(--neutral-0);
   border: var(--border-width-sm) solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow:
@@ -1193,27 +1191,25 @@ button:focus-visible {
     0 4px 12px color-mix(in oklab, var(--neutral-900) 6%, transparent);
 }
 
-.auth-dialog[open] {
+.dialog[open] {
   display: grid;
   gap: var(--space-xl);
   animation: dialog-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.auth-dialog::backdrop {
+.dialog::backdrop {
   background: color-mix(in oklab, var(--neutral-800) 32%, transparent);
   backdrop-filter: blur(3px);
   animation: backdrop-in 0.22s ease both;
 }
 
-/* Header */
-
-.auth-dialog__header {
+.dialog__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.auth-dialog__mark {
+.dialog__title {
   font-family: var(--font-family-heading);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heading);
@@ -1223,7 +1219,7 @@ button:focus-visible {
   color: color-mix(in oklab, var(--color-text) 80%, var(--color-primary) 20%);
 }
 
-.auth-dialog__close {
+.dialog__close {
   display: inline-grid;
   place-items: center;
   width: 2rem;
@@ -1236,10 +1232,18 @@ button:focus-visible {
   box-shadow: none;
 }
 
-.auth-dialog__close:hover {
+.dialog__close:hover {
   background: color-mix(in oklab, var(--color-surface-subtle) 70%, transparent);
   border-color: transparent;
   color: var(--color-text);
+}
+
+/* ─── Auth Dialog (variant) ─────────────────────────────────────────────── */
+
+.auth-dialog {
+  background:
+    radial-gradient(110% 65% at 0% 0%, color-mix(in oklab, var(--brand-100) 22%, transparent), transparent 55%),
+    var(--neutral-0);
 }
 
 /* Lead text */
@@ -1441,4 +1445,59 @@ button:focus-visible {
 
 .auth-dialog__submit:hover .auth-dialog__submit-arrow {
   transform: translateX(3px);
+}
+
+/* ─── Confirm Dialog (variant) ──────────────────────────────────────────── */
+
+.confirm-dialog {
+  width: min(22rem, calc(100vw - 2 * var(--space-xl)));
+  padding: var(--space-xl);
+}
+
+.confirm-dialog[open] {
+  gap: var(--space-md);
+}
+
+.confirm-dialog__detail {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-relaxed);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.confirm-dialog__cancel {
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.confirm-dialog__cancel:hover {
+  background: color-mix(in oklab, var(--color-surface-subtle) 60%, transparent);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.confirm-dialog__confirm {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--neutral-0);
+  font-size: var(--font-size-sm);
+}
+
+.confirm-dialog__confirm:hover {
+  background: color-mix(in oklab, var(--color-danger) 85%, var(--neutral-900) 15%);
+  border-color: color-mix(in oklab, var(--color-danger) 85%, var(--neutral-900) 15%);
 }

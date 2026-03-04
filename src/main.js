@@ -41,6 +41,11 @@ const authSubmitLabel = document.querySelector('.auth-dialog__submit-label')
 const authTabs = document.querySelectorAll('.auth-dialog__tab')
 const authPasswordToggle = document.querySelector('.auth-dialog__password-toggle')
 
+const confirmDialog = document.querySelector('.confirm-dialog')
+const confirmDialogDetail = document.querySelector('.confirm-dialog__detail')
+const confirmDialogCancel = document.querySelector('.confirm-dialog__cancel')
+const confirmDialogConfirm = document.querySelector('.confirm-dialog__confirm')
+
 const accountButton = document.querySelector('.todo-app__account-button')
 const authDialogUserEmail = document.querySelector('.auth-dialog__user-email')
 const authDialogSignOut = document.querySelector('.auth-dialog__sign-out')
@@ -535,6 +540,39 @@ async function toggleStep(id, completed) {
   if (step) step.completed = completed
 }
 
+function confirmDelete(step, itemEl, deleteButton) {
+  if (!confirmDialog) {
+    deleteStep(step?.id, itemEl, deleteButton)
+    return
+  }
+
+  const stepText = step?.text || 'this step'
+  confirmDialogDetail.textContent = stepText
+
+  confirmDialog.showModal()
+
+  const cleanup = () => {
+    confirmDialogConfirm.removeEventListener('click', onConfirm)
+    confirmDialogCancel.removeEventListener('click', onCancel)
+    confirmDialog.removeEventListener('close', onCancel)
+  }
+
+  const onConfirm = () => {
+    cleanup()
+    confirmDialog.close()
+    deleteStep(step.id, itemEl, deleteButton)
+  }
+
+  const onCancel = () => {
+    cleanup()
+    if (confirmDialog.open) confirmDialog.close()
+  }
+
+  confirmDialogConfirm.addEventListener('click', onConfirm)
+  confirmDialogCancel.addEventListener('click', onCancel)
+  confirmDialog.addEventListener('close', onCancel)
+}
+
 async function deleteStep(id, itemEl, deleteButton) {
   deleteButton.disabled = true
 
@@ -877,12 +915,13 @@ itemsContainer.addEventListener('click', (event) => {
   const target = event.target
   if (!(target instanceof Element)) return
 
-  // Delete button
+  // Delete button → show confirmation
   const deleteButton = target.closest('.todo-item__delete-button')
   if (deleteButton instanceof HTMLButtonElement) {
     const id = deleteButton.dataset.todoId
     const itemEl = deleteButton.closest('.todo-item')
-    deleteStep(id, itemEl, deleteButton)
+    const step = steps.find((s) => s.id === id)
+    confirmDelete(step, itemEl, deleteButton)
     return
   }
 
