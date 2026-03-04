@@ -150,72 +150,9 @@
             autocomplete="off"
           />
           <div class="todo-app__form-toolbar">
-            <div class="journey-picker">
-              <button
-                type="button"
-                class="journey-picker__trigger"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-                aria-label="Select journey"
-              >
-                <span class="journey-picker__dot" aria-hidden="true"></span>
-                <span class="journey-picker__label">Journey</span>
-                <i data-lucide="chevron-down" class="journey-picker__chevron"></i>
-              </button>
-              <div class="journey-picker__dropdown" role="listbox" hidden>
-                <!-- Options populated by JS via populateJourneyPicker() -->
-              </div>
-            </div>
-            <div class="path-picker">
-              <button
-                type="button"
-                class="path-picker__trigger"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-                aria-label="Select path"
-              >
-                <span class="path-picker__label">Path</span>
-                <i data-lucide="chevron-down" class="path-picker__chevron"></i>
-              </button>
-              <div class="path-picker__dropdown" role="listbox" hidden>
-                <div class="path-picker__options">
-                  <!-- Options populated by JS -->
-                </div>
-                <div class="path-picker__create">
-                  <input
-                    class="path-picker__create-input"
-                    type="text"
-                    placeholder="New path…"
-                    aria-label="Create new path"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="milestone-picker">
-              <button
-                type="button"
-                class="milestone-picker__trigger"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-                aria-label="Select milestone"
-              >
-                <span class="milestone-picker__label">Milestone</span>
-                <i data-lucide="chevron-down" class="milestone-picker__chevron"></i>
-              </button>
-              <div class="milestone-picker__dropdown" role="listbox" hidden>
-                <div class="milestone-picker__options">
-                  <!-- Options populated by JS, filtered by selected journey -->
-                </div>
-                <div class="milestone-picker__create">
-                  <input
-                    class="milestone-picker__create-input"
-                    type="text"
-                    placeholder="New milestone…"
-                    aria-label="Create new milestone"
-                  />
-                </div>
-              </div>
-            </div>
+            <button type="button" class="journey-context" aria-label="Current journey">
+              <span class="journey-context__name">Journey</span>
+            </button>
             <button class="todo-app__add-button" type="submit" aria-label="Add step">
               <i data-lucide="plus"></i>
             </button>

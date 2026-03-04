@@ -458,81 +458,33 @@ button:focus-visible {
   pointer-events: none;
 }
 
-/* ─── Journey Group Headers ─────────────────────────────────────────────── */
-
-.journey-group__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-lg) 0 var(--space-xs);
-}
-
-.journey-group__header:first-child {
-  padding-top: var(--space-sm);
-}
-
-.journey-group__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-border);
-  flex-shrink: 0;
-}
-
-.journey-group__dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
-.journey-group__dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
-.journey-group__dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
-.journey-group__dot[data-journey-slug="connections"] { background: var(--journey-connections); }
-.journey-group__dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
-
-.journey-group__name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.journey-group__count {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  opacity: 0.6;
-}
-
 /* ─── Step Tile ──────────────────────────────────────────────────────────── */
 
 .todo-item {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-sm) var(--space-md);
-  padding: var(--space-md) var(--space-sm) var(--space-md) var(--space-sm);
+  padding: var(--space-md) var(--space-sm);
   border: 0;
+  border-left: 2px solid transparent;
   border-bottom: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 40%, transparent 60%);
   border-radius: 0;
   background: transparent;
   cursor: pointer;
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-/* Journey color dot — primary visual anchor per spec */
-.todo-item__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-border);
-  flex-shrink: 0;
   transition:
+    opacity var(--motion-fast) var(--motion-ease),
     background-color var(--motion-fast) var(--motion-ease),
-    opacity var(--motion-fast) var(--motion-ease);
+    border-color var(--motion-fast) var(--motion-ease);
 }
 
-.todo-item__dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
-.todo-item__dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
-.todo-item__dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
-.todo-item__dot[data-journey-slug="connections"] { background: var(--journey-connections); }
-.todo-item__dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
+/* Journey color accents — subtle left border */
+.todo-item[data-journey-slug="vitality"]    { border-left-color: color-mix(in oklab, var(--journey-vitality) 45%, transparent); }
+.todo-item[data-journey-slug="pursuits"]    { border-left-color: color-mix(in oklab, var(--journey-pursuits) 45%, transparent); }
+.todo-item[data-journey-slug="prosperity"]  { border-left-color: color-mix(in oklab, var(--journey-prosperity) 45%, transparent); }
+.todo-item[data-journey-slug="connections"] { border-left-color: color-mix(in oklab, var(--journey-connections) 45%, transparent); }
+.todo-item[data-journey-slug="foundations"] { border-left-color: color-mix(in oklab, var(--journey-foundations) 45%, transparent); }
 
 /* Timestamp */
 .todo-item__timestamp {
@@ -557,6 +509,10 @@ button:focus-visible {
 /* Hover feedback on tile */
 .todo-item:hover {
   background: color-mix(in oklab, var(--color-surface) 40%, transparent);
+}
+
+.todo-item__content {
+  min-width: 0;
 }
 
 .todo-item__text {
@@ -616,7 +572,6 @@ button:focus-visible {
   pointer-events: auto;
 }
 
-/* Completion = saturation shift (per spec: no checkboxes, no strikethrough) */
 .todo-item.is-completed {
   opacity: 0.45;
 }
@@ -625,613 +580,263 @@ button:focus-visible {
   opacity: 0.6;
 }
 
-.todo-item.is-completed .todo-item__text {
+.todo-item.is-completed .todo-item__text,
+.todo-item.is-completed .todo-item__timestamp {
+  text-decoration: line-through;
   color: var(--color-text-muted);
 }
 
-.todo-item.is-completed .todo-item__dot {
-  opacity: 0.5;
+.todo-item.is-expanded {
+  background: color-mix(in oklab, var(--color-surface-subtle) 30%, transparent);
 }
 
-/* ─── Journey Badge ──────────────────────────────────────────────────────── */
+/* ─── Expand Button ─────────────────────────────────────────────────────── */
 
-.todo-item__journey-badge {
-  font-size: 0.72rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  line-height: 1;
-  padding: 0.2em 0.5em;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  flex-shrink: 0;
+.todo-item__expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  width: 2rem;
+  padding: 0;
+  border-radius: var(--radius-xl);
+  border-color: transparent;
   color: var(--color-text-muted);
-  background: var(--color-surface-subtle);
-  border: var(--border-width-sm) solid var(--color-border);
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-.todo-item__journey-badge[data-journey-slug="vitality"] {
-  color: var(--journey-vitality-strong);
-  background: var(--journey-vitality-soft);
-  border-color: color-mix(in oklab, var(--journey-vitality-300) 60%, transparent);
-}
-
-.todo-item__journey-badge[data-journey-slug="pursuits"] {
-  color: var(--journey-pursuits-strong);
-  background: var(--journey-pursuits-soft);
-  border-color: color-mix(in oklab, var(--journey-pursuits-300) 60%, transparent);
-}
-
-.todo-item__journey-badge[data-journey-slug="prosperity"] {
-  color: var(--journey-prosperity-strong);
-  background: var(--journey-prosperity-soft);
-  border-color: color-mix(in oklab, var(--journey-prosperity-300) 60%, transparent);
-}
-
-.todo-item__journey-badge[data-journey-slug="connections"] {
-  color: var(--journey-connections-strong);
-  background: var(--journey-connections-soft);
-  border-color: color-mix(in oklab, var(--journey-connections-300) 60%, transparent);
-}
-
-.todo-item__journey-badge[data-journey-slug="foundations"] {
-  color: var(--journey-foundations-strong);
-  background: var(--journey-foundations-soft);
-  border-color: color-mix(in oklab, var(--journey-foundations-300) 60%, transparent);
-}
-
-.todo-item.is-completed .todo-item__journey-badge {
-  opacity: 0.45;
-}
-
-/* Badge as interactive button — override global button:hover */
-button.todo-item__journey-badge {
+  background: transparent;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
   box-shadow: none;
   transition:
     opacity var(--motion-fast) var(--motion-ease),
-    border-color var(--motion-fast) var(--motion-ease);
+    transform var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
 }
 
-button.todo-item__journey-badge:hover {
-  background: var(--color-surface-subtle);
-  border-color: var(--color-text-muted);
-  color: var(--color-text-muted);
+.todo-item:hover .todo-item__expand,
+.todo-item:focus-within .todo-item__expand,
+.todo-item.is-expanded .todo-item__expand {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
-button.todo-item__journey-badge[data-journey-slug="vitality"]:hover,
-button.todo-item__journey-badge[data-journey-slug="vitality"].is-open {
-  background: var(--journey-vitality-soft);
-  border-color: var(--journey-vitality-300);
-  color: var(--journey-vitality-strong);
-}
-
-button.todo-item__journey-badge[data-journey-slug="pursuits"]:hover,
-button.todo-item__journey-badge[data-journey-slug="pursuits"].is-open {
-  background: var(--journey-pursuits-soft);
-  border-color: var(--journey-pursuits-300);
-  color: var(--journey-pursuits-strong);
-}
-
-button.todo-item__journey-badge[data-journey-slug="prosperity"]:hover,
-button.todo-item__journey-badge[data-journey-slug="prosperity"].is-open {
-  background: var(--journey-prosperity-soft);
-  border-color: var(--journey-prosperity-300);
-  color: var(--journey-prosperity-strong);
-}
-
-button.todo-item__journey-badge[data-journey-slug="connections"]:hover,
-button.todo-item__journey-badge[data-journey-slug="connections"].is-open {
-  background: var(--journey-connections-soft);
-  border-color: var(--journey-connections-300);
-  color: var(--journey-connections-strong);
-}
-
-button.todo-item__journey-badge[data-journey-slug="foundations"]:hover,
-button.todo-item__journey-badge[data-journey-slug="foundations"].is-open {
-  background: var(--journey-foundations-soft);
-  border-color: var(--journey-foundations-300);
-  color: var(--journey-foundations-strong);
-}
-
-/* ─── Journey Picker ─────────────────────────────────────────────────────── */
-
-.journey-picker {
-  position: relative;
-}
-
-.journey-picker__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-xs);
-  min-height: 1.875rem;
-  background: transparent;
-  border-color: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  border-radius: var(--radius-md);
-  box-shadow: none;
-  transition:
-    background-color var(--motion-fast) var(--motion-ease),
-    border-color var(--motion-fast) var(--motion-ease),
-    color var(--motion-fast) var(--motion-ease);
-}
-
-.journey-picker__trigger:hover,
-.journey-picker__trigger.is-open {
+.todo-item__expand:hover {
   background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
   border-color: var(--color-border);
-  color: var(--color-text);
 }
 
-.journey-picker__dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  background: var(--color-border);
-  flex-shrink: 0;
-  transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.journey-picker__dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
-.journey-picker__dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
-.journey-picker__dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
-.journey-picker__dot[data-journey-slug="connections"] { background: var(--journey-connections); }
-.journey-picker__dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
-
-.journey-picker__chevron {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  transition: transform var(--motion-fast) var(--motion-ease);
-}
-
-.journey-picker__trigger.is-open .journey-picker__chevron {
-  transform: rotate(180deg);
-}
-
-.journey-picker__dropdown {
-  position: absolute;
-  top: calc(100% + 0.375rem);
-  left: 0;
-  min-width: 11rem;
-  background: var(--color-bg);
-  border: var(--border-width-sm) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 24px color-mix(in oklab, var(--neutral-900) 10%, transparent),
-    0 2px 8px color-mix(in oklab, var(--neutral-900) 6%, transparent);
-  padding: var(--space-xs);
-  z-index: 100;
-  animation: item-appear 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.journey-picker__option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-normal);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.journey-picker__option:hover {
-  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
-  border-color: transparent;
-  color: var(--color-text);
-}
-
-.journey-picker__option-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-border);
-  flex-shrink: 0;
-}
-
-.journey-picker__option-dot[data-journey-slug="vitality"]    { background: var(--journey-vitality); }
-.journey-picker__option-dot[data-journey-slug="pursuits"]    { background: var(--journey-pursuits); }
-.journey-picker__option-dot[data-journey-slug="prosperity"]  { background: var(--journey-prosperity); }
-.journey-picker__option-dot[data-journey-slug="connections"] { background: var(--journey-connections); }
-.journey-picker__option-dot[data-journey-slug="foundations"] { background: var(--journey-foundations); }
-
-.journey-picker__option-label {
-  flex: 1;
-}
-
-.journey-picker__option-check {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  color: var(--color-primary);
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-.journey-picker__option[aria-selected="true"] .journey-picker__option-check {
-  opacity: 1;
-}
-
-/* Item journey picker — right-aligned (base already opens downward) */
-.todo-item__journey-picker .journey-picker__dropdown {
-  left: auto;
-  right: 0;
-}
-
-/* ─── Path Badge (on tiles) ─────────────────────────────────────────────── */
-
-.todo-item__paths {
-  grid-column: 2 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-top: calc(-1 * var(--space-xs));
-}
-
-.todo-item__path-badge {
-  font-size: 0.68rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  line-height: 1;
-  padding: 0.18em 0.45em;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  color: var(--color-text-muted);
-  background: color-mix(in oklab, var(--color-surface-subtle) 60%, transparent);
-  border: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 50%, transparent);
-}
-
-.todo-item.is-completed .todo-item__path-badge {
-  opacity: 0.45;
-}
-
-/* ─── Path Picker ───────────────────────────────────────────────────────── */
-
-.path-picker {
-  position: relative;
-}
-
-.path-picker__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  min-height: 1.875rem;
-  background: transparent;
-  border-color: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  border-radius: var(--radius-md);
-  box-shadow: none;
-  transition:
-    background-color var(--motion-fast) var(--motion-ease),
-    border-color var(--motion-fast) var(--motion-ease),
-    color var(--motion-fast) var(--motion-ease);
-}
-
-.path-picker__trigger:hover,
-.path-picker__trigger.is-open {
-  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-
-.path-picker__trigger.is-selected {
-  color: var(--color-text);
-}
-
-.path-picker__chevron {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  transition: transform var(--motion-fast) var(--motion-ease);
-}
-
-.path-picker__trigger.is-open .path-picker__chevron {
-  transform: rotate(180deg);
-}
-
-.path-picker__dropdown {
-  position: absolute;
-  top: calc(100% + 0.375rem);
-  left: 0;
-  min-width: 12rem;
-  background: var(--color-bg);
-  border: var(--border-width-sm) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 24px color-mix(in oklab, var(--neutral-900) 10%, transparent),
-    0 2px 8px color-mix(in oklab, var(--neutral-900) 6%, transparent);
-  padding: var(--space-xs);
-  z-index: 100;
-  animation: item-appear 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.path-picker__option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-normal);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.path-picker__option:hover {
-  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
-  border-color: transparent;
-  color: var(--color-text);
-}
-
-.path-picker__option--none {
-  color: var(--color-text-muted);
-}
-
-.path-picker__option-label {
-  flex: 1;
-}
-
-.path-picker__option-check {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  color: var(--color-primary);
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-.path-picker__option[aria-selected="true"] .path-picker__option-check {
-  opacity: 1;
-}
-
-.path-picker__create {
-  border-top: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 50%, transparent);
-  margin-top: var(--space-xs);
-  padding-top: var(--space-xs);
-}
-
-.path-picker__create-input {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  outline: none;
-}
-
-.path-picker__create-input::placeholder {
-  color: var(--color-text-muted);
-  opacity: 0.6;
-}
-
-.path-picker__create-input:focus {
-  background: color-mix(in oklab, var(--color-surface-subtle) 50%, transparent);
-}
-
-/* ─── Milestone Picker ──────────────────────────────────────────────────── */
-
-.milestone-picker {
-  position: relative;
-}
-
-.milestone-picker__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  min-height: 1.875rem;
-  background: transparent;
-  border-color: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  border-radius: var(--radius-md);
-  box-shadow: none;
-  transition:
-    background-color var(--motion-fast) var(--motion-ease),
-    border-color var(--motion-fast) var(--motion-ease),
-    color var(--motion-fast) var(--motion-ease);
-}
-
-.milestone-picker__trigger:hover,
-.milestone-picker__trigger.is-open {
-  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-
-.milestone-picker__trigger.is-selected {
-  color: var(--color-text);
-}
-
-.milestone-picker__chevron {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  transition: transform var(--motion-fast) var(--motion-ease);
-}
-
-.milestone-picker__trigger.is-open .milestone-picker__chevron {
-  transform: rotate(180deg);
-}
-
-.milestone-picker__dropdown {
-  position: absolute;
-  top: calc(100% + 0.375rem);
-  left: 0;
-  min-width: 13rem;
-  background: var(--color-bg);
-  border: var(--border-width-sm) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 24px color-mix(in oklab, var(--neutral-900) 10%, transparent),
-    0 2px 8px color-mix(in oklab, var(--neutral-900) 6%, transparent);
-  padding: var(--space-xs);
-  z-index: 100;
-  animation: item-appear 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.milestone-picker__option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-normal);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background-color var(--motion-fast) var(--motion-ease);
-}
-
-.milestone-picker__option:hover {
-  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
-  border-color: transparent;
-  color: var(--color-text);
-}
-
-.milestone-picker__option--none {
-  color: var(--color-text-muted);
-}
-
-.milestone-picker__option-label {
-  flex: 1;
-}
-
-.milestone-picker__option-check {
-  width: 0.75rem;
-  height: 0.75rem;
-  display: block;
-  flex-shrink: 0;
-  color: var(--color-primary);
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-.milestone-picker__option[aria-selected="true"] .milestone-picker__option-check {
-  opacity: 1;
-}
-
-.milestone-picker__create {
-  border-top: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 50%, transparent);
-  margin-top: var(--space-xs);
-  padding-top: var(--space-xs);
-}
-
-.milestone-picker__create-input {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  outline: none;
-}
-
-.milestone-picker__create-input::placeholder {
-  color: var(--color-text-muted);
-  opacity: 0.6;
-}
-
-.milestone-picker__create-input:focus {
-  background: color-mix(in oklab, var(--color-surface-subtle) 50%, transparent);
-}
-
-/* ─── Tile Meta Row (paths + milestone) ─────────────────────────────────── */
+/* ─── Subtle Step Metadata ──────────────────────────────────────────────── */
 
 .todo-item__meta {
-  grid-column: 2 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-top: calc(-1 * var(--space-xs));
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  line-height: 1;
 }
 
 .todo-item.is-completed .todo-item__meta {
-  opacity: 0.45;
+  opacity: 0.35;
 }
 
-/* ─── Milestone on Tile ─────────────────────────────────────────────────── */
+/* ─── Journey Context (sticky indicator) ─────────────────────────────────── */
 
-.todo-item__milestone {
-  display: flex;
+.journey-context {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
+  padding: 0.2rem 0.6rem;
+  min-height: 1.625rem;
+  background: var(--color-surface-subtle);
+  border: var(--border-width-sm) solid color-mix(in oklab, var(--color-border) 50%, transparent);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  border-radius: var(--radius-full);
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
 }
 
-.todo-item__milestone-name {
-  font-size: 0.68rem;
+.journey-context:hover {
+  border-color: var(--color-border);
+  filter: brightness(0.97);
+}
+
+/* Journey-colored badge backgrounds */
+.journey-context[data-journey-slug="vitality"] {
+  background: var(--journey-vitality-soft);
+  border-color: color-mix(in oklab, var(--journey-vitality-300) 50%, transparent);
+  color: var(--journey-vitality-700);
+}
+.journey-context[data-journey-slug="pursuits"] {
+  background: var(--journey-pursuits-soft);
+  border-color: color-mix(in oklab, var(--journey-pursuits-300) 50%, transparent);
+  color: var(--journey-pursuits-700);
+}
+.journey-context[data-journey-slug="prosperity"] {
+  background: var(--journey-prosperity-soft);
+  border-color: color-mix(in oklab, var(--journey-prosperity-300) 50%, transparent);
+  color: var(--journey-prosperity-700);
+}
+.journey-context[data-journey-slug="connections"] {
+  background: var(--journey-connections-soft);
+  border-color: color-mix(in oklab, var(--journey-connections-300) 50%, transparent);
+  color: var(--journey-connections-700);
+}
+.journey-context[data-journey-slug="foundations"] {
+  background: var(--journey-foundations-soft);
+  border-color: color-mix(in oklab, var(--journey-foundations-300) 50%, transparent);
+  color: var(--journey-foundations-700);
+}
+
+/* ─── Step Detail View ──────────────────────────────────────────────────── */
+
+.step-detail {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0 var(--space-md);
+  border-top: var(--border-width-sm) solid
+    color-mix(in oklab, var(--color-border) 30%, transparent);
+  animation: item-appear 0.15s ease both;
+}
+
+.step-detail__section {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.step-detail__label {
+  font-size: 0.65rem;
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--color-text-muted);
-  white-space: nowrap;
+  margin-bottom: var(--space-xs);
+  display: block;
 }
 
-.milestone-bar {
-  width: 3rem;
-  height: 3px;
-  background: color-mix(in oklab, var(--color-border) 60%, transparent);
-  border-radius: 2px;
-  overflow: hidden;
+.step-detail__journey-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
 }
 
-.milestone-bar__fill {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--color-text-muted);
-  transition: width var(--motion-fast) var(--motion-ease);
+.step-detail__journey-option {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: 0.2em 0.5em;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: var(--border-width-sm) solid transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
 }
 
-/* Journey-colored milestone bars */
-.milestone-bar[data-journey-slug="vitality"] .milestone-bar__fill    { background: var(--journey-vitality); }
-.milestone-bar[data-journey-slug="pursuits"] .milestone-bar__fill    { background: var(--journey-pursuits); }
-.milestone-bar[data-journey-slug="prosperity"] .milestone-bar__fill  { background: var(--journey-prosperity); }
-.milestone-bar[data-journey-slug="connections"] .milestone-bar__fill { background: var(--journey-connections); }
-.milestone-bar[data-journey-slug="foundations"] .milestone-bar__fill { background: var(--journey-foundations); }
+.step-detail__journey-option:hover {
+  background: color-mix(in oklab, var(--color-surface-subtle) 80%, transparent);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.step-detail__journey-option.is-active {
+  background: color-mix(in oklab, var(--color-surface-subtle) 60%, transparent);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.step-detail__path-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.step-detail__path-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  font-size: var(--font-size-sm);
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-surface-subtle) 60%, transparent);
+  border: var(--border-width-sm) solid
+    color-mix(in oklab, var(--color-border) 50%, transparent);
+  color: var(--color-text);
+}
+
+.step-detail__path-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.step-detail__path-remove:hover {
+  color: var(--color-danger);
+  background: transparent;
+  border-color: transparent;
+}
+
+.step-detail__add-path,
+.step-detail__add-milestone {
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-body);
+  color: var(--color-text-muted);
+  padding: 0.15em 0.3em;
+  outline: none;
+  min-width: 4rem;
+  width: 5rem;
+}
+
+.step-detail__add-path::placeholder,
+.step-detail__add-milestone::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.step-detail__add-path:focus,
+.step-detail__add-milestone:focus {
+  background: color-mix(in oklab, var(--color-surface-subtle) 50%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.step-detail__milestone-select {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-body);
+  padding: var(--space-xs) var(--space-sm);
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  width: 100%;
+  margin-bottom: var(--space-xs);
+}
+
+
 
 /* ─── Week View ──────────────────────────────────────────────────────────── */
 
@@ -1357,32 +962,6 @@ button.todo-item__journey-badge[data-journey-slug="foundations"].is-open {
   transition: opacity var(--motion-fast) var(--motion-ease);
 }
 
-/* ─── Breadcrumb ─────────────────────────────────────────────────────────── */
-
-.todo-item__breadcrumb {
-  grid-column: 2 / -1;
-  margin-top: calc(-1 * var(--space-xs));
-  font-size: 0.68rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  line-height: 1;
-}
-
-.todo-item__breadcrumb-sep {
-  color: var(--color-border);
-  padding: 0 0.15em;
-}
-
-.todo-item__breadcrumb-segment--journey { color: var(--color-text-muted); }
-.todo-item__breadcrumb-segment--path { color: var(--color-text-muted); opacity: 0.8; }
-.todo-item__breadcrumb-segment--milestone { color: var(--color-text-muted); opacity: 0.7; }
-
-.is-hidden {
-  display: none !important;
-}
-
 @media (max-width: 36rem) {
   #app {
     padding: var(--space-lg);
@@ -1402,11 +981,6 @@ button.todo-item__journey-badge[data-journey-slug="foundations"].is-open {
     justify-content: space-between;
   }
 
-  .journey-picker__label,
-  .path-picker__label,
-  .milestone-picker__label {
-    display: none;
-  }
 }
 
 /* ─── Account Button ───────────────────────────────────────────────────────── */

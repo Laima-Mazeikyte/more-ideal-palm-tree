@@ -53,6 +53,20 @@ This is an architectural boundary. Features must not bleed between hemispheres.
 
 Entering text in the input bar is the heaviest interaction in the entire application. Step tiles should feel weightless — text accumulating on the page, not interactive dashboards. New features must pass the weight test: does this make the Today view heavier? If yes, it belongs in the Journey hemisphere or doesn't belong at all.
 
+### Step Equality in the Today Hemisphere
+
+In the Today view, every step is equal. Steps are displayed in chronological order by default — not grouped or sorted by journey. The user's only goal is completing the step. Journey, Path, and Milestone metadata exists to power the Journey hemisphere's analysis, not to visually dominate the Today experience.
+
+- Journey grouping/sorting is an opt-in user preference, not a default
+- Journey markers, path indicators, and milestone badges should be subtle — light secondary text, not colored badges or prominent visual elements
+- No interaction on a step tile should feel heavier than tapping to complete it
+
+### Metadata Application Follows Established Patterns
+
+- **Journey** — Sticky context. The app remembers the user's last-used journey and applies it automatically. The user can change it via a subtle, tappable indicator — but shouldn't need to often, since people tend to work in blocks within a single domain.
+- **Path** — Functions as a label (like GitHub/Jira labels). Applied from the step's detail view as toggleable chips. Customizable, transcends any journey or milestone.
+- **Milestone** — Functions as an epic/parent item (like GitHub/Jira epics). Steps are linked to milestones from the step's detail view. A milestone is a large unit of work composed of smaller steps.
+
 ### No Self-Assessment Mechanics
 
 The app never asks users to rate, score, or evaluate their own effort. PERMA and framework signals are inferred from behavioral patterns (frequency, consistency, journey diversity), never from self-reported input. Quality tags, mood trackers, effort ratings, satisfaction scores, and similar mechanics are explicitly excluded.
