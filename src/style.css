@@ -727,13 +727,16 @@ button:focus-visible {
 
 .step-detail {
   grid-column: 1 / -1;
-  display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
   padding: var(--space-sm) 0 var(--space-md);
   border-top: var(--border-width-sm) solid
     color-mix(in oklab, var(--color-border) 30%, transparent);
   animation: item-appear 0.15s ease both;
+}
+
+.step-detail:not([hidden]) {
+  display: flex;
 }
 
 .step-detail__section {
